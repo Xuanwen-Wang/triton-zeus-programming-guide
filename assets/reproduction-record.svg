@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="352" viewBox="0 0 900 352">
+<title>一次验证需要绑定的材料</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<rect x="232" y="15" width="436" height="63" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450.0" y="41.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">同一次运行的唯一记录</text>
+<text x="450.0" y="71.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">用文件校验值绑定内容</text>
+<rect x="18" y="153" width="270" height="133" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="153" y="186" font-size="23" fill="#147D89" font-weight="600" text-anchor="middle">计算意图</text>
+<text x="153" y="225" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">kernel · signature · 常量</text>
+<text x="153" y="257" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">版本 · 命令 · 执行环境</text>
+<polyline points="450,78 450,115 153,115 153,153" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="315" y="153" width="270" height="133" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450" y="186" font-size="23" fill="#147D89" font-weight="600" text-anchor="middle">实际输入</text>
+<text x="450" y="225" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">二进制 · 输入张量</text>
+<text x="450" y="257" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">动态值 · stride · 随机种子</text>
+<polyline points="450,78 450,115 450,115 450,153" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="612" y="153" width="270" height="133" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="747" y="186" font-size="23" fill="#147D89" font-weight="600" text-anchor="middle">执行结果</text>
+<text x="747" y="225" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">参考输出 · 实际输出</text>
+<text x="747" y="257" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">误差 · 日志 · trace</text>
+<polyline points="450,78 450,115 747,115 747,153" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="18" y="340" font-size="18" fill="#627987" font-weight="400" text-anchor="start">仅重现文件名或 shape 不够；数据、程序、版本和判定规则都要对应。</text>
+</g></svg>

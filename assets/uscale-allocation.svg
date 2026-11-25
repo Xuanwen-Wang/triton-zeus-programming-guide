@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="525" viewBox="0 0 900 525">
+<title>INT4 和 UScale 的有效字节与分配空间</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">N=256 · K=128 · G=128 · 一个 64 KiB 对齐槽位</text>
+<rect x="20" y="100" width="215" height="96" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="127.5" y="143.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">INT4 编码</text>
+<text x="127.5" y="173.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">16 KiB</text>
+<rect x="235" y="100" width="215" height="96" rx="8" fill="#e5edf6" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="342.5" y="143.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">UScale 页</text>
+<text x="342.5" y="173.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">16 KiB</text>
+<rect x="450" y="100" width="430" height="96" rx="8" fill="#f0f0f0" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="665.0" y="143.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">槽位补齐</text>
+<text x="665.0" y="173.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">32 KiB</text>
+<text x="20" y="82" font-size="18" fill="#627987" font-weight="400" text-anchor="start">0</text>
+<text x="235" y="82" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">16 KiB</text>
+<text x="450" y="82" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">32 KiB</text>
+<text x="880" y="82" font-size="18" fill="#627987" font-weight="400" text-anchor="end">64 KiB</text>
+<text x="20" y="254" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">展开 UScale 页：每路 2 KiB，只有前 64 B 是本例的有效系数</text>
+<rect x="20" y="290" width="99" height="112" rx="1" fill="#edf1f5" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="20" y="290" width="4" height="112" rx="0" fill="#387EA8" stroke="#387EA8" stroke-width="1.5"/>
+<text x="70" y="337" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 0</text>
+<text x="70" y="374" font-size="16" fill="#627987" font-weight="400" text-anchor="middle">32 × BF16</text>
+<rect x="128" y="290" width="99" height="112" rx="1" fill="#edf1f5" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="128" y="290" width="4" height="112" rx="0" fill="#387EA8" stroke="#387EA8" stroke-width="1.5"/>
+<text x="178" y="337" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 1</text>
+<text x="178" y="374" font-size="16" fill="#627987" font-weight="400" text-anchor="middle">32 × BF16</text>
+<rect x="236" y="290" width="99" height="112" rx="1" fill="#edf1f5" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="236" y="290" width="4" height="112" rx="0" fill="#387EA8" stroke="#387EA8" stroke-width="1.5"/>
+<text x="286" y="337" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 2</text>
+<text x="286" y="374" font-size="16" fill="#627987" font-weight="400" text-anchor="middle">32 × BF16</text>
+<rect x="344" y="290" width="99" height="112" rx="1" fill="#edf1f5" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="344" y="290" width="4" height="112" rx="0" fill="#387EA8" stroke="#387EA8" stroke-width="1.5"/>
+<text x="394" y="337" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 3</text>
+<text x="394" y="374" font-size="16" fill="#627987" font-weight="400" text-anchor="middle">32 × BF16</text>
+<rect x="452" y="290" width="99" height="112" rx="1" fill="#edf1f5" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="452" y="290" width="4" height="112" rx="0" fill="#387EA8" stroke="#387EA8" stroke-width="1.5"/>
+<text x="502" y="337" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 4</text>
+<text x="502" y="374" font-size="16" fill="#627987" font-weight="400" text-anchor="middle">32 × BF16</text>
+<rect x="560" y="290" width="99" height="112" rx="1" fill="#edf1f5" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="560" y="290" width="4" height="112" rx="0" fill="#387EA8" stroke="#387EA8" stroke-width="1.5"/>
+<text x="610" y="337" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 5</text>
+<text x="610" y="374" font-size="16" fill="#627987" font-weight="400" text-anchor="middle">32 × BF16</text>
+<rect x="668" y="290" width="99" height="112" rx="1" fill="#edf1f5" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="668" y="290" width="4" height="112" rx="0" fill="#387EA8" stroke="#387EA8" stroke-width="1.5"/>
+<text x="718" y="337" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 6</text>
+<text x="718" y="374" font-size="16" fill="#627987" font-weight="400" text-anchor="middle">32 × BF16</text>
+<rect x="776" y="290" width="99" height="112" rx="1" fill="#edf1f5" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="776" y="290" width="4" height="112" rx="0" fill="#387EA8" stroke="#387EA8" stroke-width="1.5"/>
+<text x="826" y="337" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 7</text>
+<text x="826" y="374" font-size="16" fill="#627987" font-weight="400" text-anchor="middle">32 × BF16</text>
+<text x="20" y="449" font-size="22" fill="#183D52" font-weight="400" text-anchor="start">有效 scale：8 × 64 B = 512 B；分配页：8 × 2 KiB = 16 KiB</text>
+<text x="18" y="513" font-size="18" fill="#627987" font-weight="400" text-anchor="start">蓝色细条表示有效系数。分配补齐不直接等于执行时的物理读取量。</text>
+</g></svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="348" viewBox="0 0 900 348">
+<title>比较前先统一参考和数值边界</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<rect x="18" y="20" width="240" height="80" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="138.0" y="55.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">同一份输入</text>
+<text x="138.0" y="85.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">相同 dtype 与数据内容</text>
+<rect x="360" y="20" width="230" height="80" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="475.0" y="67.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">Zeus 输出</text>
+<rect x="360" y="160" width="230" height="80" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="475.0" y="195.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">参考输出</text>
+<text x="475.0" y="225.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">相同的中间舍入边界</text>
+<polyline points="258,60 360,60" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="258,60 305,60 305,200 360,200" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="664" y="75" width="218" height="115" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="773.0" y="127.5" font-size="22" fill="#B87924" font-weight="600" text-anchor="middle">比较</text>
+<text x="773.0" y="157.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">绝对误差 + 相对误差</text>
+<polyline points="590,60 625,60 625,112 664,112" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="590,200 625,200 625,153 664,153" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="450" y="291" font-size="24" fill="#183D52" font-weight="500" text-anchor="middle">|actual − reference| ≤ atol + rtol × |reference|</text>
+<text x="18" y="336" font-size="18" fill="#627987" font-weight="400" text-anchor="start">先定义 NaN / Inf 与零附近的处理，再判断是否通过；不要用平均误差掩盖局部失败。</text>
+</g></svg>

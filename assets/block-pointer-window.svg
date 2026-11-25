@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="565" viewBox="0 0 900 565">
+<title>块指针窗口与逻辑边界</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">shape=(64,128) · offsets=(16,96) · block_shape=(32,64)</text>
+<rect x="55" y="120" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="135" y="120" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="215" y="120" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="295" y="120" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="375" y="120" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="455" y="120" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="535" y="120" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="615" y="120" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="55" y="160" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="135" y="160" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="215" y="160" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="295" y="160" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="375" y="160" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="455" y="160" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="535" y="160" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="615" y="160" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="55" y="200" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="135" y="200" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="215" y="200" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="295" y="200" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="375" y="200" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="455" y="200" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="535" y="200" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="615" y="200" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="55" y="240" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="135" y="240" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="215" y="240" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="295" y="240" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="375" y="240" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="455" y="240" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="535" y="240" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="615" y="240" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="55" y="280" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="135" y="280" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="215" y="280" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="295" y="280" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="375" y="280" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="455" y="280" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="535" y="280" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="615" y="280" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="55" y="320" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="135" y="320" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="215" y="320" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="295" y="320" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="375" y="320" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="455" y="320" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="535" y="320" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="615" y="320" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="55" y="360" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="135" y="360" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="215" y="360" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="295" y="360" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="375" y="360" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="455" y="360" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="535" y="360" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="615" y="360" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="55" y="400" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="135" y="400" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="215" y="400" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="295" y="400" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="375" y="400" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="455" y="400" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="535" y="400" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="615" y="400" width="80" height="40" rx="0" fill="#f3f5f7" stroke="#d5dde4" stroke-width="1.5"/>
+<rect x="535" y="200" width="160" height="160" rx="0" fill="#E7F3F3" stroke="#147D89" stroke-width="1.5"/>
+<rect x="695" y="200" width="160" height="160" rx="0" fill="#FFF2DC" stroke="#B87924" stroke-width="1.5"/>
+<polyline points="535,188 855,188" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="695" y="170" font-size="20" fill="#147D89" font-weight="600" text-anchor="middle">窗口宽度 64</text>
+<text x="55" y="100" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">0</text>
+<text x="535" y="100" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">96</text>
+<text x="695" y="100" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">128</text>
+<text x="855" y="100" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">160</text>
+<text x="43" y="126" font-size="18" fill="#627987" font-weight="400" text-anchor="end">0</text>
+<text x="43" y="206" font-size="18" fill="#627987" font-weight="400" text-anchor="end">16</text>
+<text x="43" y="366" font-size="18" fill="#627987" font-weight="400" text-anchor="end">48</text>
+<text x="43" y="446" font-size="18" fill="#627987" font-weight="400" text-anchor="end">64</text>
+<text x="615" y="266" font-size="20" fill="#147D89" font-weight="600" text-anchor="middle">有效 32 列</text>
+<text x="615" y="302" font-size="19" fill="#147D89" font-weight="400" text-anchor="middle">正常读 / 写</text>
+<text x="775" y="266" font-size="20" fill="#B87924" font-weight="600" text-anchor="middle">越界 32 列</text>
+<text x="775" y="302" font-size="18" fill="#B87924" font-weight="400" text-anchor="middle">读补零 / 禁止写</text>
+<text x="55" y="485" font-size="21" fill="#183D52" font-weight="400" text-anchor="start">advance(ptr, (16,0)) 使 offsets 变为 (32,96)，不搬运数据。</text>
+<text x="18" y="553" font-size="18" fill="#627987" font-weight="400" text-anchor="start">边界来自 shape；stride 按元素计数。补齐规则由对应 load/store 参数指定。</text>
+</g></svg>

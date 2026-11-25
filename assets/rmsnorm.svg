@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="476" viewBox="0 0 900 476">
+<title>RMSNorm 的有效列和补齐列</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="18" y="28" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">数学示意：M = 3，H = 6，tile = 4 × 8</text>
+<rect x="20" y="64" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="42" y="93" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="69" y="64" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="91" y="93" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="118" y="64" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="140" y="93" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="167" y="64" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="189" y="93" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="216" y="64" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="238" y="93" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="265" y="64" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="287" y="93" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="314" y="64" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="336" y="93" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="363" y="64" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="385" y="93" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="20" y="120" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="42" y="149" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="69" y="120" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="91" y="149" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="118" y="120" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="140" y="149" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="167" y="120" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="189" y="149" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="216" y="120" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="238" y="149" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="265" y="120" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="287" y="149" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="314" y="120" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="336" y="149" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="363" y="120" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="385" y="149" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="20" y="176" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="42" y="205" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="69" y="176" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="91" y="205" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="118" y="176" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="140" y="205" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="167" y="176" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="189" y="205" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="216" y="176" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="238" y="205" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="265" y="176" width="44" height="44" rx="4" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="287" y="205" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x</text>
+<rect x="314" y="176" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="336" y="205" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="363" y="176" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="385" y="205" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="20" y="232" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="42" y="261" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="69" y="232" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="91" y="261" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="118" y="232" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="140" y="261" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="167" y="232" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="189" y="261" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="216" y="232" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="238" y="261" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="265" y="232" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="287" y="261" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="314" y="232" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="336" y="261" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<rect x="363" y="232" width="44" height="44" rx="4" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="385" y="261" font-size="20" fill="#B87924" font-weight="400" text-anchor="middle">0</text>
+<text x="20" y="324" font-size="20" fill="#147D89" font-weight="400" text-anchor="start">3 行 × 6 列有效数据</text>
+<text x="20" y="354" font-size="18" fill="#627987" font-weight="400" text-anchor="start">多出的行不写回；补齐列参与 sum 时为 0</text>
+<polyline points="425,157 486,157" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="500" y="59" width="380" height="70" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="690.0" y="101.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">FP32 平方并沿列求和</text>
+<rect x="500" y="155" width="380" height="70" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="690.0" y="197.0" font-size="22" fill="#B87924" font-weight="600" text-anchor="middle">除以真实 H = 6，再加 ε</text>
+<rect x="500" y="251" width="380" height="70" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="690.0" y="293.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">rsqrt → 逐元素缩放</text>
+<polyline points="690,129 690,155" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="690,225 690,251" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="500" y="369" font-size="20" fill="#183D52" font-weight="400" text-anchor="start">y = x × rsqrt(sum(x²) / H + ε) × w</text>
+<text x="18" y="464" font-size="18" fill="#627987" font-weight="400" text-anchor="start">列 tile 的宽度 8 用于组织计算；归一化分母始终是逻辑隐藏维度 H。</text>
+</g></svg>

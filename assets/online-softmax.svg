@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="625" viewBox="0 0 900 625">
+<title>在线 Softmax 的状态缩放与更新</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">逐块扫描 K/V：只保留每个 query 的 m、l、o</text>
+<rect x="20" y="75" width="258" height="82" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="149.0" y="111.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">旧状态</text>
+<text x="149.0" y="141.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">m_old · l_old · o_old</text>
+<rect x="346" y="75" width="534" height="82" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="613.0" y="111.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">当前块分数 s = QKᵀ × scale</text>
+<text x="613.0" y="141.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">先应用长度与因果 mask</text>
+<polyline points="613,157 613,198" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="346" y="198" width="534" height="70" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="613.0" y="240.0" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">m_new = max(m_old, max(s))</text>
+<polyline points="278,116 311,116 311,232 346,232" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="613,268 613,317" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="346" y="317" width="534" height="70" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="613.0" y="359.0" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">p = exp(s − m_new)</text>
+<rect x="20" y="317" width="258" height="70" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="149.0" y="359.0" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">α = exp(m_old − m_new)</text>
+<polyline points="149,157 149,317" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="410,268 410,292 230,292 230,317" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="149,387 149,437" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="613,387 613,437" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="20" y="437" width="860" height="108" rx="2" fill="#f2f5f8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450" y="477" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">l_new = α × l_old + sum(p)</text>
+<text x="450" y="515" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">o_new = α × o_old + pV</text>
+<text x="450" y="590" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">扫描结束：O = o / l</text>
+<text x="18" y="613" font-size="18" fill="#627987" font-weight="400" text-anchor="start">m 的尺度变化必须同时用于旧 l 和旧 o；只更新分母会改变结果。</text>
+</g></svg>

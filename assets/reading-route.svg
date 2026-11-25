@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="329" viewBox="0 0 900 329">
+<title>从第一个算子走向系统开发</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<rect x="18" y="25" width="204" height="220" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="120" y="78" font-size="33" fill="#147D89" font-weight="600" text-anchor="middle">01–02</text>
+<text x="120" y="143" font-size="20" fill="#203D4D" font-weight="400" text-anchor="middle">认识软件栈</text>
+<text x="120" y="182" font-size="20" fill="#203D4D" font-weight="400" text-anchor="middle">跑通向量加法</text>
+<polyline points="222,135 238,135" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="238" y="25" width="204" height="220" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="340" y="78" font-size="33" fill="#147D89" font-weight="600" text-anchor="middle">03–05</text>
+<text x="340" y="143" font-size="20" fill="#203D4D" font-weight="400" text-anchor="middle">硬件与编程模型</text>
+<text x="340" y="182" font-size="20" fill="#203D4D" font-weight="400" text-anchor="middle">理解类型和接口</text>
+<polyline points="442,135 458,135" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="458" y="25" width="204" height="220" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="560" y="78" font-size="33" fill="#147D89" font-weight="600" text-anchor="middle">06–08</text>
+<text x="560" y="143" font-size="20" fill="#203D4D" font-weight="400" text-anchor="middle">部署、调试与测量</text>
+<text x="560" y="182" font-size="20" fill="#203D4D" font-weight="400" text-anchor="middle">建立开发闭环</text>
+<polyline points="662,135 678,135" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="678" y="25" width="204" height="220" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="780" y="78" font-size="33" fill="#147D89" font-weight="600" text-anchor="middle">09–10</text>
+<text x="780" y="143" font-size="20" fill="#203D4D" font-weight="400" text-anchor="middle">完成典型算子</text>
+<text x="780" y="182" font-size="20" fill="#203D4D" font-weight="400" text-anchor="middle">迁移现有工作负载</text>
+<text x="18" y="317" font-size="18" fill="#627987" font-weight="400" text-anchor="start">附录按任务提供接口、选项、术语与示例索引。</text>
+</g></svg>

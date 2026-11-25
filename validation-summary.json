@@ -1,0 +1,1085 @@
+{
+  "document_version": "0.0.3",
+  "applicable_document_version": "0.0.4",
+  "editorial_updates": [
+    {
+      "file": "examples/matmul.py",
+      "tested_sha256": "491d9b4948cb3ce3a3519c3202eb8e9799c22267bb033b4b5dbf935d9c4a2d47",
+      "current_sha256": "f1c172595a78608d9da189e7ae6dfb0485faed8700d0a304129b65c304274ea9",
+      "change": "Module docstring only: use LDG terminology and point readers to the SDK Host example.",
+      "verification": "The complete AST is identical after removing the module docstring. No kernel or Host executable statements changed. Historical execution results retain their tested source identity."
+    }
+  ],
+  "date": "2026-11-24",
+  "scope": "Example compilation, CPU mathematics, host layout checks and Python functional simulation. No physical-device, CycleSim, VCS/RTL, performance or full-model execution.",
+  "source_review": {
+    "triton_shared": "c477a34e74e391cf7639571f3ebf27614004807a",
+    "triton": "0fdbed5902308ddffc69097722beceb073d31a15",
+    "torch_zeus": "b226c6f14712da91c253ddac4e74c573045fe8ab"
+  },
+  "execution_toolchain": {
+    "source_checkout_head": "ba776e8bfd381b3760f1f030a11854c772c08528",
+    "triton_checkout_head": "0fdbed5902308ddffc69097722beceb073d31a15",
+    "note": "Existing binary hashes identify this run; checkout HEAD alone does not certify a build.",
+    "binaries": {
+      "zecc": {
+        "sha256": "fce7677fce29429cf6f75449bb700077f0e5fecbf2a1aa87a11b84dead23c021"
+      },
+      "zeus-compiler": {
+        "sha256": "e2696c2ee487ab667e912bf03cd16a01a3530ae00b7928b7238f9ac94ea7d235"
+      },
+      "triton-shared-opt": {
+        "sha256": "6c578f5fe700ef457f15afebe0ec8b77f50906fc2e1df3fc5075289e28b72412"
+      },
+      "zeusv3-backend": {
+        "sha256": "d9f0803203cc9a62e2d376f92cf26d2bf748929ede5a372a86141603ac0d3dd5"
+      }
+    },
+    "libtriton_sha256": "6d1ba2ccd4cf9e9478bd305e874f1411d111c1319abbdbe48f73c00ff3820044"
+  },
+  "simulator_checkout_head": "caf480853e60207f42ddccd2223fe4a56ea037f0",
+  "example_sha256": {
+    "examples/rmsnorm.py": "f13f55749e61c91770ba75f17b59253b180e54b242f103a9ee8f08cc19f32450",
+    "examples/matmul.py": "491d9b4948cb3ce3a3519c3202eb8e9799c22267bb033b4b5dbf935d9c4a2d47",
+    "examples/fused_add_rmsnorm.py": "3dabb9bc5be7f6d354fec88b2281daadbeac2441783ca86a1461f0c8677a22a6",
+    "examples/append_kcache.py": "22df5cc20074f5b91941615c0c1e2ef81cb14cfe5b7703a69fe5fc8796131198",
+    "examples/append_vcache.py": "86d8bd0f934699323cd651d0f6ee68cfce9630f8dfa5121f03f6a068eea3e84a",
+    "examples/ldg_layout.py": "bf74c251bd544122ace9c82b18776b13f5fd3599797a5a38ae09859f9995e7b8",
+    "examples/vector_add.py": "ab0521e142892c616ca65da9b3172961f02d770069d84e56331b181517b77af1",
+    "examples/softmax.py": "6688fe2539a3107859b5a027d24c16a7ebcb35acca9e9df3c086f9a9579cfe6d",
+    "examples/quantized_matmul.py": "a98bbd0cbbfe06d0cd6d2e8e3b447bda1190887e609f4a9ebfe75b805cf882d1"
+  },
+  "zbin_sha256": {
+    "rmsnorm.zbin": "6d632bd0b3ed29f810163e9eb6f5409d8f81747c5c699758b226ab5ee4449641",
+    "matmul.zbin": "2b44005a729bcf1699fefcdc2730cb8e90caab033751ccd7ebc3cf6e7090c081",
+    "fused_add_rmsnorm.zbin": "21d78825ed7cb3d147c0c80e6e0fef7ddd0a17718f42d9a4f30ea5508a91c405",
+    "append_kcache.zbin": "d02987e9bf5b6310ef8fad11b3ba7223c629900dc66d504b02a207f752fdc803",
+    "append_vcache.zbin": "b26c7756cd10b16c8db731cbef75e34ab625ff5d0c165024235cfb5fead73e7d",
+    "vector_add.zbin": "444625344671e0143cef53ed925f9f7514a36feb1536cd2c46c10e7bc20bcce8",
+    "softmax.zbin": "1db566779f3c521d51717b94ebc100c553e22dd491fd6d204763781478124843",
+    "quantized_matmul.zbin": "b04e79d3c370fc64e29b931e06f13293a83ded95ae39e58f60787ebbe8de3fce"
+  },
+  "counts": {
+    "compile_only": 8,
+    "cpu_reference_only": 15,
+    "python_functional_simulator": 16,
+    "host_layout_reference": 11
+  },
+  "runs": [
+    {
+      "name": "compile-rmsnorm",
+      "example": "examples/rmsnorm.py",
+      "kind": "compile_only",
+      "status": "PASS",
+      "command": [
+        "$ZEUS_SRC/build/bin/zecc",
+        "--compile-only-zbin",
+        "-c",
+        "examples/rmsnorm.py",
+        "-o",
+        "build/validation-v03/rmsnorm.zbin",
+        "--kernel-name",
+        "rmsnorm_bf16",
+        "--loc=full",
+        "--signature",
+        "out_ptr=*bf16",
+        "--signature",
+        "x_ptr=*bf16",
+        "--signature",
+        "weight_ptr=*bf16",
+        "--signature",
+        "N=i32",
+        "--signature",
+        "D=i32",
+        "--signature",
+        "eps=fp32",
+        "--constant",
+        "CORE_NUM=2",
+        "--constant",
+        "BLOCK_TOKENS=4",
+        "--constant",
+        "BLOCK_HIDDEN=256"
+      ],
+      "log_sha256": "dfb4045f0d5ecf52828e2614752d5bce4590ce40789ed964a9dc81ea22375b21"
+    },
+    {
+      "name": "cpu-05-rmsnorm",
+      "example": "examples/rmsnorm.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/rmsnorm.py",
+        "--rows",
+        "65",
+        "--width",
+        "256"
+      ],
+      "log_sha256": "5a49a8aa99e50cb0a0aae68a07c1350bcc08b73366ac6b260d7be616c24a3d58"
+    },
+    {
+      "name": "cpu-06-rmsnorm",
+      "example": "examples/rmsnorm.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/rmsnorm.py",
+        "--rows",
+        "3",
+        "--width",
+        "250"
+      ],
+      "log_sha256": "48a47d707bbb1eae7321e3f7f558f48561fe5d3ea5cf96cd50e2f4459fadfde0"
+    },
+    {
+      "name": "compile-matmul",
+      "example": "examples/matmul.py",
+      "kind": "compile_only",
+      "status": "PASS",
+      "command": [
+        "$ZEUS_SRC/build/bin/zecc",
+        "--compile-only-zbin",
+        "-c",
+        "examples/matmul.py",
+        "-o",
+        "build/validation-v03/matmul.zbin",
+        "--kernel-name",
+        "matmul_bf16",
+        "--loc=full",
+        "--signature",
+        "a_ptr=*bf16",
+        "--signature",
+        "w_ptr_list=*i64",
+        "--signature",
+        "c_ptr=*bf16",
+        "--signature",
+        "M=i32",
+        "--signature",
+        "K=i32",
+        "--signature",
+        "N=i32",
+        "--constant",
+        "CORE_NUM=1",
+        "--constant",
+        "BLOCK_M=128",
+        "--constant",
+        "BLOCK_K=128",
+        "--constant",
+        "BLOCK_N=128"
+      ],
+      "log_sha256": "da791c1a0803a1bcebafcf202aba90d913f04782235416c358faacc6dc74856b"
+    },
+    {
+      "name": "cpu-09-matmul",
+      "example": "examples/matmul.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/matmul.py"
+      ],
+      "log_sha256": "d6c4bca68b9b04719d4b6f64367989f549b8a3fa31bfee3c03d3f02f2737902b"
+    },
+    {
+      "name": "cpu-10-matmul",
+      "example": "examples/matmul.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/matmul.py",
+        "--m",
+        "129",
+        "--n",
+        "130",
+        "--k",
+        "257"
+      ],
+      "log_sha256": "97b6302c759e3a168ca014894cb63664c2987a97751ab8777b78414cee14ba42"
+    },
+    {
+      "name": "sim-matmul-256",
+      "example": "examples/matmul.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/matmul.py",
+        "--dynamic",
+        "M=256",
+        "N=256",
+        "K=384",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03/matmul.zbin",
+        "--keep-dir",
+        "build/validation-v03/sim-matmul-256",
+        "--no-trace"
+      ],
+      "log_sha256": "06a7f4e6caae6f7763d7825df43b0ed35ba17fb18fc6df4ac0b454ee6e1db8d4"
+    },
+    {
+      "name": "compile-fused_add_rmsnorm",
+      "example": "examples/fused_add_rmsnorm.py",
+      "kind": "compile_only",
+      "status": "PASS",
+      "command": [
+        "$ZEUS_SRC/build/bin/zecc",
+        "--compile-only-zbin",
+        "-c",
+        "examples/fused_add_rmsnorm.py",
+        "-o",
+        "build/validation-v03/fused_add_rmsnorm.zbin",
+        "--kernel-name",
+        "fused_add_rmsnorm_bf16",
+        "--loc=full",
+        "--signature",
+        "x_ptr=*bf16",
+        "--signature",
+        "residual_ptr=*bf16",
+        "--signature",
+        "weight_ptr=*bf16",
+        "--signature",
+        "N=i32",
+        "--signature",
+        "D=i32",
+        "--signature",
+        "eps=fp32",
+        "--constant",
+        "CORE_NUM=2",
+        "--constant",
+        "BLOCK_TOKENS=4",
+        "--constant",
+        "BLOCK_HIDDEN=256"
+      ],
+      "log_sha256": "9c155b61b1576115165ba26509b383d529bc7c5b43d8cd0197bd10e25827f6d0"
+    },
+    {
+      "name": "cpu-07-fused_add_rmsnorm",
+      "example": "examples/fused_add_rmsnorm.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/fused_add_rmsnorm.py",
+        "--rows",
+        "65",
+        "--width",
+        "256"
+      ],
+      "log_sha256": "a96fa19749b9aa5af609c8eca22bc456a8e4289139dbada9a55b5e04ec17a57e"
+    },
+    {
+      "name": "cpu-08-fused_add_rmsnorm",
+      "example": "examples/fused_add_rmsnorm.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/fused_add_rmsnorm.py",
+        "--rows",
+        "3",
+        "--width",
+        "250"
+      ],
+      "log_sha256": "5139fef1cf52974501d9bf0c41ed90a06d0f07dd2cf6e01a8806534bdc1d9899"
+    },
+    {
+      "name": "compile-append_kcache",
+      "example": "examples/append_kcache.py",
+      "kind": "compile_only",
+      "status": "PASS",
+      "command": [
+        "$ZEUS_SRC/build/bin/zecc",
+        "--compile-only-zbin",
+        "-c",
+        "examples/append_kcache.py",
+        "-o",
+        "build/validation-v03/append_kcache.zbin",
+        "--kernel-name",
+        "append_kcache_token",
+        "--loc=full",
+        "--signature",
+        "new_token_ptr=*bf16",
+        "--signature",
+        "cache_page_ptr_list=*i64",
+        "--signature",
+        "token_offset=i32",
+        "--constant",
+        "PAGE_SIZE=1024",
+        "--constant",
+        "HEAD_DIM=128"
+      ],
+      "log_sha256": "f99a468c7c86f59ee57da83a6da9a3b0ec08849df9f0ad1529286287d77bbcee"
+    },
+    {
+      "name": "cpu-11-append_kcache",
+      "example": "examples/append_kcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_kcache.py",
+        "--token-offset",
+        "0"
+      ],
+      "log_sha256": "954cdd4521ccf3fbae55915f3bb49fd88b1ba65095adb6a7e215eaec92d2ad8b"
+    },
+    {
+      "name": "cpu-12-append_kcache",
+      "example": "examples/append_kcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_kcache.py",
+        "--token-offset",
+        "127"
+      ],
+      "log_sha256": "6d744c4b3e7c5e91a99f33dd0cafc8366db81332e4a57d9bc4100b08b5abaf8b"
+    },
+    {
+      "name": "cpu-13-append_kcache",
+      "example": "examples/append_kcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_kcache.py",
+        "--token-offset",
+        "128"
+      ],
+      "log_sha256": "18931085c7061538cf4157ddde2fe6eaa82efcfe09e761e9408305ecbe1e56b1"
+    },
+    {
+      "name": "cpu-14-append_kcache",
+      "example": "examples/append_kcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_kcache.py",
+        "--token-offset",
+        "1000"
+      ],
+      "log_sha256": "a8c51aaf762c6b4cb085a73843d824abd006731fbadafd854a0ea1aba5d2fdfa"
+    },
+    {
+      "name": "cpu-15-append_kcache",
+      "example": "examples/append_kcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_kcache.py",
+        "--token-offset",
+        "1023"
+      ],
+      "log_sha256": "cdab401a4c49923053982ce73b803b28d13bfbcf3386b9bfc3ab10c3d136b6be"
+    },
+    {
+      "name": "sim-append_kcache-127",
+      "example": "examples/append_kcache.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/append_kcache.py",
+        "--dynamic",
+        "token_offset=127",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03/append_kcache.zbin",
+        "--keep-dir",
+        "build/validation-v03/sim-append_kcache-127",
+        "--no-trace"
+      ],
+      "log_sha256": "90f991bf8240dab387925eacb57748f2ea9eabd79085ac4a238876411e6d425c"
+    },
+    {
+      "name": "sim-append_kcache-128",
+      "example": "examples/append_kcache.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/append_kcache.py",
+        "--dynamic",
+        "token_offset=128",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03/append_kcache.zbin",
+        "--keep-dir",
+        "build/validation-v03/sim-append_kcache-128",
+        "--no-trace"
+      ],
+      "log_sha256": "088062710513503e937c0b9d73aa30b9ba090ae9d678aa942b53aadebcc33a12"
+    },
+    {
+      "name": "sim-append_kcache-1000",
+      "example": "examples/append_kcache.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/append_kcache.py",
+        "--dynamic",
+        "token_offset=1000",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03/append_kcache.zbin",
+        "--keep-dir",
+        "build/validation-v03/sim-append_kcache-1000",
+        "--no-trace"
+      ],
+      "log_sha256": "679001797440b7c1863d0d29ece8688940f4cfbd7cfec7913b6bead173bedb14"
+    },
+    {
+      "name": "sim-append_kcache-1023",
+      "example": "examples/append_kcache.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/append_kcache.py",
+        "--dynamic",
+        "token_offset=1023",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03/append_kcache.zbin",
+        "--keep-dir",
+        "build/validation-v03/sim-append_kcache-1023",
+        "--no-trace"
+      ],
+      "log_sha256": "3362b3ef42989790952b1103307ad5dcdfadbcfd3cb2335a4b5e9dd5045e9edf"
+    },
+    {
+      "name": "compile-append_vcache",
+      "example": "examples/append_vcache.py",
+      "kind": "compile_only",
+      "status": "PASS",
+      "command": [
+        "$ZEUS_SRC/build/bin/zecc",
+        "--compile-only-zbin",
+        "-c",
+        "examples/append_vcache.py",
+        "-o",
+        "build/validation-v03/append_vcache.zbin",
+        "--kernel-name",
+        "append_vcache_token",
+        "--loc=full",
+        "--signature",
+        "new_token_ptr=*bf16",
+        "--signature",
+        "cache_page_ptr_list=*i64",
+        "--signature",
+        "token_offset=i32",
+        "--constant",
+        "PAGE_SIZE=1024",
+        "--constant",
+        "HEAD_DIM=128"
+      ],
+      "log_sha256": "17cdf8ca040f7eb3c70a198d54e01b49d0f0b9c0d3155eec6a157a9986c2a0df"
+    },
+    {
+      "name": "cpu-16-append_vcache",
+      "example": "examples/append_vcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_vcache.py",
+        "--token-offset",
+        "0"
+      ],
+      "log_sha256": "14d427350685d3c270eb2740de6c60921dcbfe1e7218a1bd37af61edc58d7c0f"
+    },
+    {
+      "name": "cpu-17-append_vcache",
+      "example": "examples/append_vcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_vcache.py",
+        "--token-offset",
+        "63"
+      ],
+      "log_sha256": "e5d241afc2584b7a7b17dd9c2341b537ec1376f4600377d047f816a035e5b09d"
+    },
+    {
+      "name": "cpu-18-append_vcache",
+      "example": "examples/append_vcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_vcache.py",
+        "--token-offset",
+        "64"
+      ],
+      "log_sha256": "eb13cc1aa08031b45129fcd456778fa81d7d8a4414d43384a60b156e3cda9d67"
+    },
+    {
+      "name": "cpu-19-append_vcache",
+      "example": "examples/append_vcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_vcache.py",
+        "--token-offset",
+        "1000"
+      ],
+      "log_sha256": "684ef47536dac91a2279521f77e8eb3cee8bf85b850bcda91461db5ef33c16ef"
+    },
+    {
+      "name": "cpu-20-append_vcache",
+      "example": "examples/append_vcache.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/append_vcache.py",
+        "--token-offset",
+        "1023"
+      ],
+      "log_sha256": "7b20a49cc18f11fa1f5b058227e3f0b3ef46f672397e8dc6caa72c5123b676d0"
+    },
+    {
+      "name": "sim-append_vcache-63",
+      "example": "examples/append_vcache.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/append_vcache.py",
+        "--dynamic",
+        "token_offset=63",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03/append_vcache.zbin",
+        "--keep-dir",
+        "build/validation-v03/sim-append_vcache-63",
+        "--no-trace"
+      ],
+      "log_sha256": "14a5d65a84d016a588fed8d89c8c0aec657ca1301b9162d08b3095402e4c0e59"
+    },
+    {
+      "name": "sim-append_vcache-64",
+      "example": "examples/append_vcache.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/append_vcache.py",
+        "--dynamic",
+        "token_offset=64",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03/append_vcache.zbin",
+        "--keep-dir",
+        "build/validation-v03/sim-append_vcache-64",
+        "--no-trace"
+      ],
+      "log_sha256": "bc29171c97053b800d962f5c8561c7992965887d4fd8d47767e23b0d862f8d61"
+    },
+    {
+      "name": "sim-append_vcache-1000",
+      "example": "examples/append_vcache.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/append_vcache.py",
+        "--dynamic",
+        "token_offset=1000",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03/append_vcache.zbin",
+        "--keep-dir",
+        "build/validation-v03/sim-append_vcache-1000",
+        "--no-trace"
+      ],
+      "log_sha256": "0507b0720b4c57c87c4c488c58e92cb081fb234cbb03c3bb57c5ab28a94f523a"
+    },
+    {
+      "name": "sim-append_vcache-1023",
+      "example": "examples/append_vcache.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/append_vcache.py",
+        "--dynamic",
+        "token_offset=1023",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03/append_vcache.zbin",
+        "--keep-dir",
+        "build/validation-v03/sim-append_vcache-1023",
+        "--no-trace"
+      ],
+      "log_sha256": "d42c5b097133d9edf9fa2b086dfc6b54840bb611b4bcb9302faee3a718b385ed"
+    },
+    {
+      "name": "cpu-21-ldg_layout",
+      "example": "examples/ldg_layout.py",
+      "kind": "host_layout_reference",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/ldg_layout.py"
+      ],
+      "log_sha256": "d056658f8bc91bb2a492875d9bb85e6cc938c9617c288ca2774ca2da15b01060"
+    },
+    {
+      "name": "compile-vector_add",
+      "example": "examples/vector_add.py",
+      "kind": "compile_only",
+      "status": "PASS",
+      "command": [
+        "$ZEUS_SRC/build/bin/zecc",
+        "--compile-only-zbin",
+        "-c",
+        "examples/vector_add.py",
+        "-o",
+        "build/validation-v03-final-cases/vector_add.zbin",
+        "--kernel-name",
+        "add_bf16",
+        "--loc=full",
+        "--signature",
+        "out_ptr=*bf16",
+        "--signature",
+        "in1_ptr=*bf16",
+        "--signature",
+        "in2_ptr=*bf16",
+        "--signature",
+        "numel=i32",
+        "--signature",
+        "alpha=fp32",
+        "--constant",
+        "BLOCK=1024",
+        "--constant",
+        "CORE_NUM=2"
+      ],
+      "log_sha256": "7469b593395bcedee627e422c8767310cca13d8555b6594fa148ff0d16f8f94e"
+    },
+    {
+      "name": "cpu-01-vector_add",
+      "example": "examples/vector_add.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/vector_add.py",
+        "--numel",
+        "0"
+      ],
+      "log_sha256": "99db0e99be34cc84eb305591a2cf5cdabebe11f7e65ea185673307a1a9af73d0"
+    },
+    {
+      "name": "cpu-02-vector_add",
+      "example": "examples/vector_add.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/vector_add.py",
+        "--numel",
+        "1"
+      ],
+      "log_sha256": "89671d25ff6a2c6fc2250425fae845685dd5a5f9ef6b28ad9020206cbadf6f9d"
+    },
+    {
+      "name": "cpu-03-vector_add",
+      "example": "examples/vector_add.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/vector_add.py",
+        "--numel",
+        "2048"
+      ],
+      "log_sha256": "9ce5cf3e585f414c42d68e483b024ea8f412569b09e2f7017d225fc0eef3060c"
+    },
+    {
+      "name": "cpu-04-vector_add",
+      "example": "examples/vector_add.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/vector_add.py",
+        "--numel",
+        "2500"
+      ],
+      "log_sha256": "06a1d2716c985063772b2537e27dfd0532c922f9c56a9be41ecad8b7840fbc42"
+    },
+    {
+      "name": "sim-vector_add-2048-1.0",
+      "example": "examples/vector_add.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/vector_add.py",
+        "--dynamic",
+        "numel=2048",
+        "alpha=1.0",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03-final-cases/vector_add.zbin",
+        "--keep-dir",
+        "build/validation-v03-final-cases/sim-vector_add-2048-1.0",
+        "--no-trace"
+      ],
+      "log_sha256": "c9921f00f5b661e16a5c969be54657f84f7f6b47c527f3e681e4ce903a100a75"
+    },
+    {
+      "name": "sim-vector_add-2500-1.0",
+      "example": "examples/vector_add.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/vector_add.py",
+        "--dynamic",
+        "numel=2500",
+        "alpha=1.0",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03-final-cases/vector_add.zbin",
+        "--keep-dir",
+        "build/validation-v03-final-cases/sim-vector_add-2500-1.0",
+        "--no-trace"
+      ],
+      "log_sha256": "2ab92c5a03e08e32cfae9f4536775dc1358bae900381fbac0e08d6ed3d1a9e27"
+    },
+    {
+      "name": "compile-softmax",
+      "example": "examples/softmax.py",
+      "kind": "compile_only",
+      "status": "PASS",
+      "command": [
+        "$ZEUS_SRC/build/bin/zecc",
+        "--compile-only-zbin",
+        "-c",
+        "examples/softmax.py",
+        "-o",
+        "build/validation-v03-final-cases/softmax.zbin",
+        "--kernel-name",
+        "softmax_fp32",
+        "--loc=full",
+        "--signature",
+        "output_ptr=*fp32",
+        "--signature",
+        "input_ptr=*fp32",
+        "--signature",
+        "num_tokens=i32",
+        "--signature",
+        "hidden_size=i32",
+        "--constant",
+        "CORE_NUM=2",
+        "--constant",
+        "BLOCK_TOKENS=1",
+        "--constant",
+        "BLOCK_HIDDEN=1024"
+      ],
+      "log_sha256": "31f5151dc102621a887970b59b5df388d101be53e8bf79e70a96ba3784cec808"
+    },
+    {
+      "name": "cpu-23-softmax",
+      "example": "examples/softmax.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/softmax.py",
+        "--rows",
+        "5",
+        "--width",
+        "1024"
+      ],
+      "log_sha256": "ec8fd3c5f274933aa556663df29f07a3aa530b7c86a2e0252d2fafeccd463151"
+    },
+    {
+      "name": "cpu-24-softmax",
+      "example": "examples/softmax.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/softmax.py",
+        "--rows",
+        "5",
+        "--width",
+        "1000"
+      ],
+      "log_sha256": "fea08addda25e64bc0a64d8da3bcf1d816dc1ab29d48c2f1f54cc8130e5f2676"
+    },
+    {
+      "name": "cpu-25-softmax",
+      "example": "examples/softmax.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/softmax.py",
+        "--rows",
+        "1",
+        "--width",
+        "1"
+      ],
+      "log_sha256": "b5087bb7ab6189a6f8ea9e91ca8cc685be41f56fe7faa9c3f330161a3c58e013"
+    },
+    {
+      "name": "cpu-26-softmax",
+      "example": "examples/softmax.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/softmax.py",
+        "--rows",
+        "0",
+        "--width",
+        "1024"
+      ],
+      "log_sha256": "8416fd0651f754eb5fad6ce43534ac0ac4cb8080d7c9cf3c0b1d1e7b5dc3e96c"
+    },
+    {
+      "name": "sim-softmax-5-1024",
+      "example": "examples/softmax.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/softmax.py",
+        "--dynamic",
+        "num_tokens=5",
+        "hidden_size=1024",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03-final-cases/softmax.zbin",
+        "--keep-dir",
+        "build/validation-v03-final-cases/sim-softmax-5-1024",
+        "--no-trace"
+      ],
+      "log_sha256": "3ada719e796b4a829c4733acd24b6652bb4075eea4c0c39cca571b05afc099d8"
+    },
+    {
+      "name": "sim-softmax-5-1000",
+      "example": "examples/softmax.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/softmax.py",
+        "--dynamic",
+        "num_tokens=5",
+        "hidden_size=1000",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03-final-cases/softmax.zbin",
+        "--keep-dir",
+        "build/validation-v03-final-cases/sim-softmax-5-1000",
+        "--no-trace"
+      ],
+      "log_sha256": "1d9a65e4b1a7c36a08a61f7f31821550ce8e40ca060987ec192364cc38f29c22"
+    },
+    {
+      "name": "sim-softmax-1-1",
+      "example": "examples/softmax.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/softmax.py",
+        "--dynamic",
+        "num_tokens=1",
+        "hidden_size=1",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03-final-cases/softmax.zbin",
+        "--keep-dir",
+        "build/validation-v03-final-cases/sim-softmax-1-1",
+        "--no-trace"
+      ],
+      "log_sha256": "0a18bbfeebbae48ee91a4401b3957e4ce3be56ba6b502b624e681c487901fc4e"
+    },
+    {
+      "name": "compile-quantized_matmul",
+      "example": "examples/quantized_matmul.py",
+      "kind": "compile_only",
+      "status": "PASS",
+      "command": [
+        "$ZEUS_SRC/build/bin/zecc",
+        "--compile-only-zbin",
+        "-c",
+        "examples/quantized_matmul.py",
+        "-o",
+        "build/validation-v03-final-cases/quantized_matmul.zbin",
+        "--kernel-name",
+        "quantized_matmul",
+        "--loc=full",
+        "--signature",
+        "act=*fp8e4nv",
+        "--signature",
+        "weight=*i64",
+        "--signature",
+        "output=*fp32",
+        "--signature",
+        "M=i32",
+        "--signature",
+        "K=i32",
+        "--signature",
+        "N=i32",
+        "--constant",
+        "BLOCK_M=4",
+        "--constant",
+        "BLOCK_K=128",
+        "--constant",
+        "BLOCK_N=256",
+        "--constant",
+        "UGROUP=128"
+      ],
+      "log_sha256": "238b60c09d75658fa60688b7d064f8a8a202faa14288b71fe9888b9712a1473c"
+    },
+    {
+      "name": "cpu-22-quantized_matmul",
+      "example": "examples/quantized_matmul.py",
+      "kind": "cpu_reference_only",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "examples/quantized_matmul.py"
+      ],
+      "log_sha256": "5e07eb3faba87d2b82427b1dde394902309fc17a2364477233d621374b356248"
+    },
+    {
+      "name": "sim-quantized_matmul-4-128-256",
+      "example": "examples/quantized_matmul.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "$ZEUS_SRC/sim_check/sim_test.py",
+        "examples/quantized_matmul.py",
+        "--dynamic",
+        "M=4",
+        "K=128",
+        "N=256",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03-final-cases/quantized_matmul.zbin",
+        "--keep-dir",
+        "build/validation-v03-final-cases/sim-quantized_matmul-4-128-256",
+        "--no-trace"
+      ],
+      "log_sha256": "4bf37833f185e29a1a124fb1f26fffabca7f48ec150285d64a81416e52f5648b"
+    },
+    {
+      "name": "softmax-extreme-finite",
+      "example": "examples/softmax.py",
+      "kind": "python_functional_simulator",
+      "status": "PASS",
+      "command": [
+        "python3",
+        "sim_check/sim_test.py",
+        "examples/softmax.py",
+        "--dynamic",
+        "num_tokens=5",
+        "hidden_size=1000",
+        "softmax_case=extreme_finite",
+        "--seed",
+        "42",
+        "--prebuilt-zbin",
+        "build/validation-v03-final-cases/softmax.zbin",
+        "--keep-dir",
+        "build/validation-v03-final-cases/sim-softmax-extreme",
+        "--no-trace"
+      ],
+      "shape": [
+        5,
+        1000
+      ],
+      "input": -1e+30,
+      "expected_probability": 0.001,
+      "output_min": 0.0010000000474974513,
+      "output_max": 0.0010000000474974513,
+      "zbin_sha256": "1db566779f3c521d51717b94ebc100c553e22dd491fd6d204763781478124843"
+    }
+  ],
+  "host_wrapper_guard": {
+    "source_sha256": "ab0521e142892c616ca65da9b3172961f02d770069d84e56331b181517b77af1",
+    "scope": "Host guard only; allocation and launch mocked",
+    "cases": [
+      {
+        "numel": 0,
+        "block": 1024,
+        "expected": "accepted",
+        "actual": "accepted"
+      },
+      {
+        "numel": 2147482624,
+        "block": 1024,
+        "expected": "accepted",
+        "actual": "accepted"
+      },
+      {
+        "numel": 2147482625,
+        "block": 1024,
+        "expected": "rejected",
+        "actual": "rejected"
+      },
+      {
+        "numel": 2147483647,
+        "block": 1024,
+        "expected": "rejected",
+        "actual": "rejected"
+      }
+    ]
+  },
+  "original_evidence": [
+    {
+      "file": "build/validation-v03/results.json",
+      "sha256": "28947def7a0191d06f7e7386a247a9205e7e240c95458c0d05a57a2b93cc4648"
+    },
+    {
+      "file": "build/validation-v03-final-cases/results.json",
+      "sha256": "36581e9bdfe0b4ea824890ecdd9f73fb1bb642b9217cdfb07f77bf53d75c6374"
+    }
+  ]
+}

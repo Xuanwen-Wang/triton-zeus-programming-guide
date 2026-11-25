@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="500" viewBox="0 0 900 500">
+<title>矩阵乘在 K 维上的三次累加</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="18" y="28" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">M = N = 256，K = 384；BM = BN = BK = 128</text>
+<text x="18" y="75" font-size="21" fill="#183D52" font-weight="500" text-anchor="start">A 行块：128 × 384</text>
+<text x="475" y="75" font-size="21" fill="#183D52" font-weight="500" text-anchor="start">W 逻辑行块：128 × 384（N × K）</text>
+<rect x="18" y="100" width="119" height="87" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="77.5" y="138.5" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">A0</text>
+<text x="77.5" y="168.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<rect x="475" y="100" width="119" height="87" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="534.5" y="138.5" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">W0</text>
+<text x="534.5" y="168.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<rect x="147" y="100" width="119" height="87" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="206.5" y="138.5" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">A1</text>
+<text x="206.5" y="168.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<rect x="604" y="100" width="119" height="87" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="663.5" y="138.5" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">W1</text>
+<text x="663.5" y="168.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<rect x="276" y="100" width="119" height="87" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="335.5" y="138.5" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">A2</text>
+<text x="335.5" y="168.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<rect x="733" y="100" width="119" height="87" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="792.5" y="138.5" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">W2</text>
+<text x="792.5" y="168.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<text x="18" y="224" font-size="19" fill="#627987" font-weight="400" text-anchor="start">K 块 0</text>
+<text x="147" y="224" font-size="19" fill="#627987" font-weight="400" text-anchor="start">K 块 1</text>
+<text x="276" y="224" font-size="19" fill="#627987" font-weight="400" text-anchor="start">K 块 2</text>
+<rect x="18" y="280" width="260" height="83" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="148.0" y="316.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">A0 · W0ᵀ</text>
+<text x="148.0" y="346.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">FP32 accumulator</text>
+<rect x="320" y="280" width="260" height="83" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450.0" y="316.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">+ A1 · W1ᵀ</text>
+<text x="450.0" y="346.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">保持同一个累加器</text>
+<rect x="622" y="280" width="260" height="83" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="752.0" y="316.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">+ A2 · W2ᵀ</text>
+<text x="752.0" y="346.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">完成后转换并写回</text>
+<polyline points="278,322 320,322" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="580,322 622,322" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="450" y="421" font-size="23" fill="#183D52" font-weight="500" text-anchor="middle">C[128,128] = Σₖ tl.dot(A[k], tl.trans(W[k]))</text>
+<text x="18" y="488" font-size="18" fill="#627987" font-weight="400" text-anchor="start">图中展示一个 C tile；全矩阵还有其他 M/N tile，彼此拥有独立输出范围。</text>
+</g></svg>

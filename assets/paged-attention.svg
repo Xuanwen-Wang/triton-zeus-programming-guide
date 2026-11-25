@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="590" viewBox="0 0 900 590">
+<title>页表从逻辑 token 到物理槽位的映射</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">block_table=[3,1] · page_size=256 · seq_len=390</text>
+<text x="20" y="80" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">逻辑序列</text>
+<rect x="20" y="104" width="430" height="60" rx="1" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="450" y="104" width="225" height="60" rx="1" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="675" y="104" width="205" height="60" rx="1" fill="#f1f1f1" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="235" y="141" font-size="21" fill="#203D4D" font-weight="400" text-anchor="middle">逻辑页 0：token 0–255</text>
+<text x="562" y="141" font-size="21" fill="#203D4D" font-weight="400" text-anchor="middle">256–389</text>
+<text x="777" y="141" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">不参与计算</text>
+<text x="20" y="210" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">物理存储</text>
+<rect x="20" y="243" width="200" height="84" rx="1" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="120" y="276" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">物理页 0</text>
+<text x="120" y="309" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">0–255</text>
+<rect x="240" y="243" width="200" height="84" rx="1" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="340" y="276" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">物理页 1</text>
+<text x="340" y="309" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">256–511</text>
+<rect x="460" y="243" width="200" height="84" rx="1" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="560" y="276" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">物理页 2</text>
+<text x="560" y="309" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">512–767</text>
+<rect x="680" y="243" width="200" height="84" rx="1" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="780" y="276" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">物理页 3</text>
+<text x="780" y="309" font-size="19" fill="#203D4D" font-weight="400" text-anchor="middle">768–1023</text>
+<polyline points="235,164 235,186 780,186 780,243" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="562,164 562,224 340,224 340,243" fill="none" stroke="#B87924" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="20" y="375" width="860" height="155" rx="2" fill="#f6f7f9" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="40" y="408" font-size="21" fill="#183D52" font-weight="600" text-anchor="start">physical_slot = block_table[t // 256] × 256 + t % 256</text>
+<text x="40" y="448" font-size="21" fill="#203D4D" font-weight="400" text-anchor="start">t=0 → 768</text>
+<text x="300" y="448" font-size="21" fill="#203D4D" font-weight="400" text-anchor="start">t=255 → 1023</text>
+<text x="600" y="448" font-size="21" fill="#203D4D" font-weight="400" text-anchor="start">t=256 → 256</text>
+<text x="40" y="486" font-size="21" fill="#203D4D" font-weight="400" text-anchor="start">t=389 → 389；第二个逻辑页只有 134 个有效 token。</text>
+<text x="18" y="578" font-size="18" fill="#627987" font-weight="400" text-anchor="start">逻辑页次序决定 Attention 的序列语义；物理页号不等于 token 的先后次序。</text>
+</g></svg>

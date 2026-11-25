@@ -1,0 +1,23 @@
+title: Triton Zeus 编程指南
+subtitle: Zeus V3 近存架构、算子开发与性能优化
+edition: v0.0.4 · 编程指南
+version: v0.0.4
+copyright-year: 2026
+date: 2026 年 11 月 25 日
+source-date-epoch: 1795536000
+chapters:
+  - chapters/01-overview.md
+  - chapters/02-quick-start.md
+  - chapters/03-hardware-model.md
+  - chapters/03a-ldg-memory.md
+  - chapters/04-programming-model.md
+  - chapters/05-language-and-api.md
+  - chapters/05a-api-reference.md
+  - chapters/06-compile-and-run.md
+  - chapters/07-debugging.md
+  - chapters/08-performance.md
+  - chapters/09-examples.md
+  - chapters/09b-quantized-matmul.md
+  - chapters/09a-attention-and-cache.md
+  - chapters/10-migration.md
+  - chapters/11-appendices.md

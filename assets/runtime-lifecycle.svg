@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="570" viewBox="0 0 900 570">
+<title>异步提交与资源生命周期</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">一个 producer 与跨 stream consumer 共用同一份 buffer</text>
+<text x="20" y="123" font-size="21" fill="#183D52" font-weight="600" text-anchor="start">Host</text>
+<polyline points="160,115 865,115" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="20" y="258" font-size="21" fill="#183D52" font-weight="600" text-anchor="start">Stream A</text>
+<polyline points="160,250 865,250" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="20" y="393" font-size="21" fill="#183D52" font-weight="600" text-anchor="start">Stream B</text>
+<polyline points="160,385 865,385" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="168" y="79" width="130" height="60" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="233.0" y="116.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">分配</text>
+<rect x="342" y="79" width="150" height="60" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="417.0" y="116.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">提交 A</text>
+<rect x="711" y="79" width="150" height="60" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="786.0" y="116.0" font-size="21" fill="#B87924" font-weight="600" text-anchor="middle">可回收</text>
+<rect x="350" y="217" width="212" height="66" rx="2" fill="#E7F3F3" stroke="#147D89" stroke-width="1.5"/>
+<text x="456" y="257" font-size="23" fill="#147D89" font-weight="600" text-anchor="middle">producer</text>
+<polyline points="418,139 418,207" fill="none" stroke="#627987" stroke-width="2" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+<text x="578" y="307" font-size="19" fill="#147D89" font-weight="400" text-anchor="start">完成事件</text>
+<polyline points="562,283 562,385" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="580" y="352" width="175" height="66" rx="2" fill="#e5edf6" stroke="#387EA8" stroke-width="1.5"/>
+<text x="668" y="392" font-size="23" fill="#387EA8" font-weight="600" text-anchor="middle">consumer</text>
+<text x="480" y="406" font-size="20" fill="#627987" font-weight="400" text-anchor="start">wait</text>
+<polyline points="755,352 785,327 785,139" fill="none" stroke="#B87924" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="180,470 755,470" fill="none" stroke="#147D89" stroke-width="2"/>
+<polyline points="180,456 180,484" fill="none" stroke="#147D89" stroke-width="2"/>
+<polyline points="755,456 755,484" fill="none" stroke="#147D89" stroke-width="2"/>
+<text x="468" y="507" font-size="21" fill="#147D89" font-weight="600" text-anchor="middle">Tensor / LocalMem owner 在所有访问结束前保持存活</text>
+<text x="18" y="558" font-size="18" fill="#627987" font-weight="400" text-anchor="start">事件与等待表达跨 stream 依赖；Host 提交返回不表示 producer 或 consumer 已完成。</text>
+</g></svg>

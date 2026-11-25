@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="450" viewBox="0 0 900 450">
+<title>不同验证环境回答不同问题</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<rect x="18" y="12" width="240" height="61" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="138.0" y="49.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">静态检查 / 编译</text>
+<text x="300" y="50" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">语法、IR 合法性与代码生成</text>
+<rect x="18" y="90" width="240" height="61" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="138.0" y="127.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">功能仿真</text>
+<text x="300" y="128" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">给定输入的输出与参考是否一致</text>
+<rect x="18" y="168" width="240" height="61" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="138.0" y="205.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">CycleSim</text>
+<text x="300" y="206" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">模型中的时序、空闲与流水间隔</text>
+<rect x="18" y="246" width="240" height="61" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="138.0" y="283.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">VCS / RTL</text>
+<text x="300" y="284" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">RTL 路径的功能与时序</text>
+<rect x="18" y="324" width="240" height="61" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="138.0" y="361.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">真实设备</text>
+<text x="300" y="362" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">实际执行、数值与设备耗时</text>
+<text x="18" y="438" font-size="18" fill="#627987" font-weight="400" text-anchor="start">每层都绑定自己的输入与版本。通过一层，不能自动推断其他层通过。</text>
+</g></svg>

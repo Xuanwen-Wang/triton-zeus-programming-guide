@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430">
+<title>二维 tile 的两种广播方向</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">X[M,N]：行尺度与通道尺度的轴含义不同</text>
+<text x="20" y="80" font-size="23" fill="#183D52" font-weight="600" text-anchor="start">行尺度 r[M] → [M,1]</text>
+<text x="480" y="80" font-size="23" fill="#183D52" font-weight="600" text-anchor="start">通道尺度 c[N] → [1,N]</text>
+<rect x="100" y="160" width="45" height="34" rx="0" fill="#e0eff0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="145" y="160" width="45" height="34" rx="0" fill="#e0eff0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="190" y="160" width="45" height="34" rx="0" fill="#e0eff0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="235" y="160" width="45" height="34" rx="0" fill="#e0eff0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="280" y="160" width="45" height="34" rx="0" fill="#e0eff0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="325" y="160" width="45" height="34" rx="0" fill="#e0eff0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="100" y="194" width="45" height="34" rx="0" fill="#d3e6e7" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="145" y="194" width="45" height="34" rx="0" fill="#d3e6e7" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="190" y="194" width="45" height="34" rx="0" fill="#d3e6e7" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="235" y="194" width="45" height="34" rx="0" fill="#d3e6e7" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="280" y="194" width="45" height="34" rx="0" fill="#d3e6e7" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="325" y="194" width="45" height="34" rx="0" fill="#d3e6e7" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="100" y="228" width="45" height="34" rx="0" fill="#c7dfe1" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="145" y="228" width="45" height="34" rx="0" fill="#c7dfe1" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="190" y="228" width="45" height="34" rx="0" fill="#c7dfe1" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="235" y="228" width="45" height="34" rx="0" fill="#c7dfe1" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="280" y="228" width="45" height="34" rx="0" fill="#c7dfe1" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="325" y="228" width="45" height="34" rx="0" fill="#c7dfe1" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="100" y="262" width="45" height="34" rx="0" fill="#bad6d9" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="145" y="262" width="45" height="34" rx="0" fill="#bad6d9" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="190" y="262" width="45" height="34" rx="0" fill="#bad6d9" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="235" y="262" width="45" height="34" rx="0" fill="#bad6d9" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="280" y="262" width="45" height="34" rx="0" fill="#bad6d9" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="325" y="262" width="45" height="34" rx="0" fill="#bad6d9" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="20" y="160" width="35" height="34" rx="0" fill="#e0eff0" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="55,177 91,177" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="20" y="194" width="35" height="34" rx="0" fill="#d3e6e7" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="55,211 91,211" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="20" y="228" width="35" height="34" rx="0" fill="#c7dfe1" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="55,245 91,245" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="20" y="262" width="35" height="34" rx="0" fill="#bad6d9" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="55,279 91,279" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="235" y="333" font-size="20" fill="#147D89" font-weight="600" text-anchor="middle">沿 N 轴复用同一个行值</text>
+<rect x="560" y="160" width="45" height="34" rx="0" fill="#e1eaf3" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="605" y="160" width="45" height="34" rx="0" fill="#d6e2ef" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="650" y="160" width="45" height="34" rx="0" fill="#cbdbea" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="695" y="160" width="45" height="34" rx="0" fill="#bfd3e5" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="740" y="160" width="45" height="34" rx="0" fill="#b4cce0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="785" y="160" width="45" height="34" rx="0" fill="#a9c4db" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="560" y="194" width="45" height="34" rx="0" fill="#e1eaf3" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="605" y="194" width="45" height="34" rx="0" fill="#d6e2ef" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="650" y="194" width="45" height="34" rx="0" fill="#cbdbea" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="695" y="194" width="45" height="34" rx="0" fill="#bfd3e5" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="740" y="194" width="45" height="34" rx="0" fill="#b4cce0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="785" y="194" width="45" height="34" rx="0" fill="#a9c4db" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="560" y="228" width="45" height="34" rx="0" fill="#e1eaf3" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="605" y="228" width="45" height="34" rx="0" fill="#d6e2ef" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="650" y="228" width="45" height="34" rx="0" fill="#cbdbea" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="695" y="228" width="45" height="34" rx="0" fill="#bfd3e5" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="740" y="228" width="45" height="34" rx="0" fill="#b4cce0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="785" y="228" width="45" height="34" rx="0" fill="#a9c4db" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="560" y="262" width="45" height="34" rx="0" fill="#e1eaf3" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="605" y="262" width="45" height="34" rx="0" fill="#d6e2ef" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="650" y="262" width="45" height="34" rx="0" fill="#cbdbea" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="695" y="262" width="45" height="34" rx="0" fill="#bfd3e5" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="740" y="262" width="45" height="34" rx="0" fill="#b4cce0" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="785" y="262" width="45" height="34" rx="0" fill="#a9c4db" stroke="#ffffff" stroke-width="1.5"/>
+<rect x="560" y="105" width="45" height="28" rx="0" fill="#e1eaf3" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="582,133 582,153" fill="none" stroke="#387EA8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="605" y="105" width="45" height="28" rx="0" fill="#d6e2ef" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="627,133 627,153" fill="none" stroke="#387EA8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="650" y="105" width="45" height="28" rx="0" fill="#cbdbea" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="672,133 672,153" fill="none" stroke="#387EA8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="695" y="105" width="45" height="28" rx="0" fill="#bfd3e5" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="717,133 717,153" fill="none" stroke="#387EA8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="740" y="105" width="45" height="28" rx="0" fill="#b4cce0" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="762,133 762,153" fill="none" stroke="#387EA8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="785" y="105" width="45" height="28" rx="0" fill="#a9c4db" stroke="#ffffff" stroke-width="1.5"/>
+<polyline points="807,133 807,153" fill="none" stroke="#387EA8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="695" y="333" font-size="20" fill="#387EA8" font-weight="600" text-anchor="middle">沿 M 轴复用同一个通道值</text>
+<text x="235" y="382" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">Y = X * r[:, None]</text>
+<text x="695" y="382" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">Y = X * c[None, :]</text>
+<text x="18" y="418" font-size="18" fill="#627987" font-weight="400" text-anchor="start">插入的单例轴决定广播方向；图中颜色表示同一份尺度被重复使用。</text>
+</g></svg>

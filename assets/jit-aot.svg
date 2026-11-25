@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="455" viewBox="0 0 900 455">
+<title>JIT、AOT 与 hybrid 使用同一特化身份</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<rect x="205" y="15" width="490" height="68" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450.0" y="44.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">确定 kernel 特化身份</text>
+<text x="450.0" y="74.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">源码 · 常量 · 签名 · 目标 · 选项</text>
+<rect x="18" y="153" width="270" height="90" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="153.0" y="193.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">JIT</text>
+<text x="153.0" y="223.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">查缓存；缺失则编译</text>
+<polyline points="450,83 450,117 153,117 153,153" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="153,243 153,278 450,278" fill="none" stroke="#627987" stroke-width="2"/>
+<rect x="315" y="153" width="270" height="90" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450.0" y="193.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">AOT</text>
+<text x="450.0" y="223.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">查 bundle；缺失则报错</text>
+<polyline points="450,83 450,117 450,117 450,153" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="450,243 450,278 450,278" fill="none" stroke="#627987" stroke-width="2"/>
+<rect x="612" y="153" width="270" height="90" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="747.0" y="193.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">hybrid</text>
+<text x="747.0" y="223.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">先 bundle；缺失走 JIT</text>
+<polyline points="450,83 450,117 747,117 747,153" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="747,243 747,278 450,278" fill="none" stroke="#627987" stroke-width="2"/>
+<polyline points="450,278 450,309" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="130" y="309" width="640" height="83" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450.0" y="345.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">运行时打包参数并提交当前 stream</text>
+<text x="450.0" y="375.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">设备或明确配置的仿真后端</text>
+<text x="18" y="443" font-size="18" fill="#627987" font-weight="400" text-anchor="start">运行时参数值变化通常复用特化；constexpr 与编译属性变化可能产生新特化。</text>
+</g></svg>

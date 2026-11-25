@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="825" viewBox="0 0 900 825">
+<title>四 VP、四 DT、L2 Buffer 与 PE 的核内数据路径</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">核内视图 · 控制、向量、变换与矩阵通路</text>
+<text x="20" y="86" font-size="25" fill="#183D52" font-weight="600" text-anchor="start">PE 的大矩阵操作数常驻 LDG</text>
+<text x="20" y="126" font-size="22" fill="#627987" font-weight="400" text-anchor="start">激活与中间结果使用本核 L2 Buffer</text>
+<text x="20" y="165" font-size="22" fill="#147D89" font-weight="600" text-anchor="start">两条数据路径在 PE 汇合</text>
+<rect x="572" y="72" width="300" height="98" rx="2" fill="#dbe5ef" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="566" y="78" width="300" height="98" rx="2" fill="#e7eef5" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="560" y="84" width="300" height="98" rx="2" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="710" y="124" font-size="26" fill="#183D52" font-weight="600" text-anchor="middle">LDG · 3D DRAM</text>
+<text x="710" y="161" font-size="22" fill="#203D4D" font-weight="400" text-anchor="middle">权重 / KV Cache</text>
+<rect x="20" y="212" width="860" height="531" rx="3" fill="#ffffff" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="50" y="238" width="580" height="53" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="340.0" y="271.5" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">CT · 循环、地址与指令发射</text>
+<text x="50" y="328" font-size="21" fill="#183D52" font-weight="600" text-anchor="start">向量与归约</text>
+<rect x="50" y="345" width="59" height="51" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="79.5" y="377.5" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">VP0</text>
+<line x1="79.5" y1="396" x2="79.5" y2="450" stroke="#147D89" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<rect x="117" y="345" width="59" height="51" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="146.5" y="377.5" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">VP1</text>
+<line x1="146.5" y1="396" x2="146.5" y2="450" stroke="#147D89" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<rect x="184" y="345" width="59" height="51" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="213.5" y="377.5" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">VP2</text>
+<line x1="213.5" y1="396" x2="213.5" y2="450" stroke="#147D89" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<rect x="251" y="345" width="59" height="51" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="280.5" y="377.5" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">VP3</text>
+<line x1="280.5" y1="396" x2="280.5" y2="450" stroke="#147D89" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<text x="370" y="328" font-size="21" fill="#183D52" font-weight="600" text-anchor="start">片上数据变换</text>
+<rect x="370" y="345" width="59" height="51" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="399.5" y="377.5" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">DT0</text>
+<line x1="399.5" y1="396" x2="399.5" y2="450" stroke="#147D89" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<rect x="437" y="345" width="59" height="51" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="466.5" y="377.5" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">DT1</text>
+<line x1="466.5" y1="396" x2="466.5" y2="450" stroke="#147D89" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<rect x="504" y="345" width="59" height="51" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="533.5" y="377.5" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">DT2</text>
+<line x1="533.5" y1="396" x2="533.5" y2="450" stroke="#147D89" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<rect x="571" y="345" width="59" height="51" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="600.5" y="377.5" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">DT3</text>
+<line x1="600.5" y1="396" x2="600.5" y2="450" stroke="#147D89" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<rect x="50" y="450" width="580" height="95" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="340.0" y="492.5" font-size="26" fill="#183D52" font-weight="600" text-anchor="middle">L2 Buffer · 512 KiB</text>
+<text x="340.0" y="522.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">输入 tile · 部分和 · 向量结果 · 布局暂存</text>
+<rect x="720" y="278" width="140" height="80" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="790.0" y="313.0" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">WL1 × 8</text>
+<text x="790.0" y="343.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">读取与分发</text>
+<rect x="720" y="450" width="140" height="95" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="790.0" y="492.5" font-size="29" fill="#183D52" font-weight="600" text-anchor="middle">PE</text>
+<text x="790.0" y="522.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">矩阵乘累加</text>
+<polyline points="790,182 790,278" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="790,358 790,450" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="760" y="407" font-size="20" fill="#147D89" font-weight="600" text-anchor="end">矩阵读取</text>
+<polyline points="630,476 720,476" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="674" y="461" font-size="18" fill="#147D89" font-weight="600" text-anchor="middle">AL1</text>
+<polyline points="720,523 630,523" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="674" y="552" font-size="18" fill="#147D89" font-weight="600" text-anchor="middle">OL1</text>
+<rect x="50" y="630" width="140" height="65" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="120.0" y="657.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">LD</text>
+<text x="120.0" y="687.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">原样读入</text>
+<rect x="230" y="630" width="140" height="65" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="300.0" y="657.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">ST</text>
+<text x="300.0" y="687.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">原样写出</text>
+<rect x="430" y="630" width="200" height="65" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="530.0" y="657.5" font-size="22" fill="#B87924" font-weight="600" text-anchor="middle">LW → WA</text>
+<text x="530.0" y="687.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">按布局写 LDG</text>
+<polyline points="120,630 120,545" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="300,545 300,630" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="530,545 530,630" fill="none" stroke="#B87924" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="50" y="725" font-size="19" fill="#627987" font-weight="400" text-anchor="start">LD/ST：经互连访问 GDG 或 LDG 原始字节</text>
+<polyline points="630,663 892,663 892,320 860,320" fill="none" stroke="#B87924" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="850,278 850,182" fill="none" stroke="#B87924" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="746" y="643" font-size="19" fill="#B87924" font-weight="400" text-anchor="middle">WL1 写接口</text>
+<text x="20" y="785" font-size="20" fill="#627987" font-weight="400" text-anchor="start">VP 与 DT 各有四条物理通道；编译器按依赖、工作量与存储冲突安排并行。</text>
+<text x="18" y="813" font-size="18" fill="#627987" font-weight="400" text-anchor="start">箭头表示数据方向。WL1 提供矩阵读取与外部访问接口；示意图不按带宽比例绘制。</text>
+</g></svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="440" viewBox="0 0 900 440">
+<title>BF16 最近偶数舍入的两个相邻中点</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">最近偶数舍入 · 相同距离下选择保留位为偶数的一端</text>
+<polyline points="55,195 850,195" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="75" y="190" width="10" height="10" rx="5" fill="#183D52" stroke="#183D52" stroke-width="1.5"/>
+<text x="80" y="235" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">1</text>
+<text x="80" y="270" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">0x3f80 · 偶</text>
+<rect x="445" y="190" width="10" height="10" rx="5" fill="#183D52" stroke="#183D52" stroke-width="1.5"/>
+<text x="450" y="235" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">1 + 2⁻⁷</text>
+<text x="450" y="270" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">0x3f81 · 奇</text>
+<rect x="815" y="190" width="10" height="10" rx="5" fill="#183D52" stroke="#183D52" stroke-width="1.5"/>
+<text x="820" y="235" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">1 + 2⁻⁶</text>
+<text x="820" y="270" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">0x3f82 · 偶</text>
+<rect x="260" y="190" width="10" height="10" rx="5" fill="#B87924" stroke="#B87924" stroke-width="1.5"/>
+<text x="265" y="235" font-size="19" fill="#B87924" font-weight="400" text-anchor="middle">正中间</text>
+<rect x="630" y="190" width="10" height="10" rx="5" fill="#B87924" stroke="#B87924" stroke-width="1.5"/>
+<text x="635" y="235" font-size="19" fill="#B87924" font-weight="400" text-anchor="middle">正中间</text>
+<polyline points="265,185 265,123 80,123 80,180" fill="none" stroke="#B87924" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="635,185 635,123 820,123 820,180" fill="none" stroke="#B87924" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="172" y="98" font-size="21" fill="#B87924" font-weight="600" text-anchor="middle">舍入到左端</text>
+<text x="728" y="98" font-size="21" fill="#B87924" font-weight="600" text-anchor="middle">舍入到右端</text>
+<text x="40" y="330" font-size="24" fill="#183D52" font-weight="600" text-anchor="start">1 + 2⁻⁸ → 1</text>
+<text x="40" y="375" font-size="24" fill="#183D52" font-weight="600" text-anchor="start">(1 + 2⁻⁷) + 2⁻⁸ → 1 + 2⁻⁶</text>
+<text x="18" y="428" font-size="18" fill="#627987" font-weight="400" text-anchor="start">位模式标注对应 BF16；图示覆盖 1 附近的正常数，两个中点不应都向下截断。</text>
+</g></svg>

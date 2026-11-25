@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="445" viewBox="0 0 900 445">
+<title>向量加法与矩阵乘的数据路径</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="18" y="29" font-size="20" fill="#147D89" font-weight="600" text-anchor="start">向量加法</text>
+<rect x="18" y="60" width="158" height="80" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="97.0" y="95.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">GDG</text>
+<text x="97.0" y="125.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">x、z</text>
+<polyline points="176,100 194,100" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="194" y="60" width="158" height="80" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="273.0" y="95.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">L2 Buffer</text>
+<text x="273.0" y="125.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">输入 tile</text>
+<polyline points="352,100 370,100" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="370" y="60" width="158" height="80" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="449.0" y="95.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">VP</text>
+<text x="449.0" y="125.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">FP32 运算</text>
+<polyline points="528,100 546,100" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="546" y="60" width="158" height="80" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="625.0" y="95.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">L2 Buffer</text>
+<text x="625.0" y="125.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">输出 tile</text>
+<polyline points="704,100 722,100" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="722" y="60" width="158" height="80" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="801.0" y="95.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">GDG</text>
+<text x="801.0" y="125.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">y</text>
+<text x="185" y="51" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">LD</text>
+<text x="713" y="51" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">ST</text>
+<text x="18" y="202" font-size="20" fill="#147D89" font-weight="600" text-anchor="start">矩阵乘</text>
+<rect x="18" y="230" width="228" height="80" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="132.0" y="265.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">L2 Buffer</text>
+<text x="132.0" y="295.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">activation tile</text>
+<rect x="18" y="330" width="228" height="80" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="132.0" y="365.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">LDG</text>
+<text x="132.0" y="395.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">已格式化的权重 tile</text>
+<rect x="359" y="260" width="174" height="92" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="446.0" y="301.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">PE</text>
+<text x="446.0" y="331.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">乘加与累加</text>
+<rect x="647" y="260" width="228" height="92" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="761.0" y="301.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">L2 Buffer</text>
+<text x="761.0" y="331.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">累加结果 / 输出</text>
+<polyline points="246,270 309,270 309,287 359,287" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="246,370 309,370 309,326 359,326" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="533,307 647,307" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="587" y="287" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">结果</text>
+<text x="18" y="433" font-size="18" fill="#627987" font-weight="400" text-anchor="start">概念数据路径。DT 可参与布局转换；它不代表所有外部内存搬运。</text>
+</g></svg>

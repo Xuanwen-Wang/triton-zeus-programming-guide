@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360">
+<title>参数值的地址与设备数据地址</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="18" y="28" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">指针参数：以向量加法的输出参数为例</text>
+<rect x="18" y="56" width="185" height="81" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="110.5" y="91.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">args[0]</text>
+<text x="110.5" y="121.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">宿主指针数组</text>
+<rect x="305" y="56" width="266" height="81" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="438.0" y="91.5" font-size="21" fill="#B87924" font-weight="600" text-anchor="middle">保存 out 地址的槽位</text>
+<text x="438.0" y="121.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">内容是设备地址</text>
+<rect x="671" y="56" width="211" height="81" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="776.5" y="91.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">设备输出 buffer</text>
+<text x="776.5" y="121.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">保存 BF16 元素</text>
+<polyline points="203,96 305,96" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="571,96 671,96" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="18" y="206" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">标量参数：以运行时 numel 为例</text>
+<rect x="18" y="233" width="185" height="81" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="110.5" y="268.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">args[3]</text>
+<text x="110.5" y="298.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">宿主指针数组</text>
+<rect x="305" y="233" width="266" height="81" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="438.0" y="268.5" font-size="21" fill="#B87924" font-weight="600" text-anchor="middle">保存 numel 的槽位</text>
+<text x="438.0" y="298.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">内容是 i32 数值</text>
+<polyline points="203,274 305,274" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="623" y="263" font-size="21" fill="#627987" font-weight="400" text-anchor="start">签名确定读取宽度</text>
+<text x="623" y="295" font-size="21" fill="#627987" font-weight="400" text-anchor="start">此处读取 32 位整数</text>
+<text x="18" y="348" font-size="18" fill="#627987" font-weight="400" text-anchor="start">运行时根据签名打包参数值；不能把设备 buffer 首地址直接当作参数值槽位。</text>
+</g></svg>

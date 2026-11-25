@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="490" viewBox="0 0 900 490">
+<title>同一矩阵在 Dense 与 Blocked 中的物理块顺序</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">W[256,256] · BF16 · Blocked 使用 BN=256、BK=128</text>
+<text x="20" y="80" font-size="23" fill="#183D52" font-weight="600" text-anchor="start">逻辑矩阵 [N,K]</text>
+<rect x="20" y="108" width="140" height="110" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="90" y="151" font-size="29" fill="#183D52" font-weight="600" text-anchor="middle">A</text>
+<text x="90" y="188" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<rect x="160" y="108" width="140" height="110" rx="0" fill="#dce9f3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="230" y="151" font-size="29" fill="#183D52" font-weight="600" text-anchor="middle">B</text>
+<text x="230" y="188" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<rect x="20" y="218" width="140" height="110" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="90" y="261" font-size="29" fill="#183D52" font-weight="600" text-anchor="middle">C</text>
+<text x="90" y="298" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<rect x="160" y="218" width="140" height="110" rx="0" fill="#e8e5f1" stroke="#ffffff" stroke-width="1.5"/>
+<text x="230" y="261" font-size="29" fill="#183D52" font-weight="600" text-anchor="middle">D</text>
+<text x="230" y="298" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">128 × 128</text>
+<text x="350" y="86" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">Dense：全矩阵统一 pack</text>
+<rect x="350" y="108" width="132" height="68" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="416" y="152" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">A</text>
+<text x="350" y="207" font-size="18" fill="#627987" font-weight="400" text-anchor="start">0 KiB</text>
+<rect x="482" y="108" width="132" height="68" rx="0" fill="#dce9f3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="548" y="152" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">B</text>
+<text x="482" y="207" font-size="18" fill="#627987" font-weight="400" text-anchor="start">32 KiB</text>
+<rect x="614" y="108" width="132" height="68" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="680" y="152" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">C</text>
+<text x="614" y="207" font-size="18" fill="#627987" font-weight="400" text-anchor="start">64 KiB</text>
+<rect x="746" y="108" width="132" height="68" rx="0" fill="#e8e5f1" stroke="#ffffff" stroke-width="1.5"/>
+<text x="812" y="152" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">D</text>
+<text x="746" y="207" font-size="18" fill="#627987" font-weight="400" text-anchor="start">96 KiB</text>
+<text x="350" y="243" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">Blocked：左半块、右半块各自 pack</text>
+<rect x="350" y="265" width="132" height="68" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="416" y="309" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">A</text>
+<text x="350" y="364" font-size="18" fill="#627987" font-weight="400" text-anchor="start">0 KiB</text>
+<rect x="482" y="265" width="132" height="68" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="548" y="309" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">C</text>
+<text x="482" y="364" font-size="18" fill="#627987" font-weight="400" text-anchor="start">32 KiB</text>
+<rect x="614" y="265" width="132" height="68" rx="0" fill="#dce9f3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="680" y="309" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">B</text>
+<text x="614" y="364" font-size="18" fill="#627987" font-weight="400" text-anchor="start">64 KiB</text>
+<rect x="746" y="265" width="132" height="68" rx="0" fill="#e8e5f1" stroke="#ffffff" stroke-width="1.5"/>
+<text x="812" y="309" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">D</text>
+<text x="746" y="364" font-size="18" fill="#627987" font-weight="400" text-anchor="start">96 KiB</text>
+<rect x="20" y="388" width="860" height="63" rx="2" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="38" y="414" font-size="21" fill="#183D52" font-weight="600" text-anchor="start">W[0,128]：Dense +32 KiB，Blocked +64 KiB</text>
+<text x="38" y="442" font-size="21" fill="#183D52" font-weight="600" text-anchor="start">W[128,0]：Dense +64 KiB，Blocked +32 KiB</text>
+<text x="18" y="478" font-size="18" fill="#627987" font-weight="400" text-anchor="start">每个字母代表 32 KiB 的已 pack 子区；外层块顺序变化，块内仍采用相同 normal 规则。</text>
+</g></svg>

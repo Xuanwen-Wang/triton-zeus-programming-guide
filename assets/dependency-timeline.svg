@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430">
+<title>发布、执行完成与缓冲区复用的依赖</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="18" y="32" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">同一个 tile 的数据依赖</text>
+<rect x="18" y="63" width="250" height="79" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="143.0" y="97.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">LOAD 完成</text>
+<text x="143.0" y="127.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">输入数据就绪</text>
+<rect x="325" y="63" width="250" height="79" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450.0" y="97.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">VP 完成</text>
+<text x="450.0" y="127.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">结果数据就绪</text>
+<rect x="632" y="63" width="250" height="79" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="757.0" y="97.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">STORE 完成</text>
+<text x="757.0" y="127.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">结果可回收</text>
+<polyline points="268,102 325,102" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="575,102 632,102" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="297" y="163" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">RAW</text>
+<text x="603" y="163" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">RAW</text>
+<text x="18" y="220" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">复用同一块 L2 Buffer 之前</text>
+<rect x="18" y="248" width="365" height="85" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="200.5" y="285.5" font-size="21" fill="#B87924" font-weight="600" text-anchor="middle">旧 tile 的最后一个 reader 完成</text>
+<text x="200.5" y="315.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">释放缓冲区所有权</text>
+<rect x="497" y="248" width="385" height="85" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="689.5" y="285.5" font-size="21" fill="#147D89" font-weight="600" text-anchor="middle">下一 tile 才能覆盖缓冲区</text>
+<text x="689.5" y="315.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">避免读到被覆盖的数据</text>
+<polyline points="383,290 497,290" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="440" y="270" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">WAR</text>
+<text x="18" y="418" font-size="18" fill="#627987" font-weight="400" text-anchor="start">提交命令 ≠ 执行完成。箭头表示必须满足的先后关系，不表示时间长度。</text>
+</g></svg>

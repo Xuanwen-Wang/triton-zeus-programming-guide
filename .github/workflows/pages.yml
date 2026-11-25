@@ -1,0 +1,57 @@
+name: Publish programming guide
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install the pinned Pandoc release
+        env:
+          PANDOC_VERSION: 3.9.0.2
+          PANDOC_SHA256: a69abfababda8a56969a254b09f9553a7be89ddec00d4e0fe9fd585d71a67508
+        run: |
+          curl --fail --location --retry 3 \
+            "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz" \
+            --output "${RUNNER_TEMP}/pandoc.tar.gz"
+          echo "${PANDOC_SHA256}  ${RUNNER_TEMP}/pandoc.tar.gz" | sha256sum --check
+          tar -xzf "${RUNNER_TEMP}/pandoc.tar.gz" -C "${RUNNER_TEMP}"
+          echo "${RUNNER_TEMP}/pandoc-${PANDOC_VERSION}/bin" >> "${GITHUB_PATH}"
+      - name: Build and verify the website
+        run: |
+          python3 scripts/build_site.py
+          python3 scripts/check_site.py
+          python3 scripts/check_public_artifact.py --tracked
+      - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

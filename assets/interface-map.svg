@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="375" viewBox="0 0 900 375">
+<title>存储类型和计算类型的边界</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<rect x="18" y="18" width="864" height="64" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450.0" y="45.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">访存契约</text>
+<text x="450.0" y="75.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">shape · stride · 指针所属存储 · 有效边界</text>
+<rect x="18" y="149" width="158" height="85" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="97.0" y="186.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">BF16</text>
+<text x="97.0" y="216.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">输入存储</text>
+<polyline points="176,191 194,191" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="194" y="149" width="158" height="85" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="273.0" y="186.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">FP32</text>
+<text x="273.0" y="216.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">显式转换</text>
+<polyline points="352,191 370,191" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="370" y="149" width="158" height="85" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="449.0" y="186.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">计算</text>
+<text x="449.0" y="216.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">算术 / 归约</text>
+<polyline points="528,191 546,191" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="546" y="149" width="158" height="85" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="625.0" y="186.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">BF16</text>
+<text x="625.0" y="216.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">结果舍入</text>
+<polyline points="704,191 722,191" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="722" y="149" width="158" height="85" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="801.0" y="186.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">写回</text>
+<text x="801.0" y="216.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">有效范围</text>
+<text x="185" y="132" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">load</text>
+<text x="713" y="132" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">store</text>
+<rect x="18" y="284" width="420" height="59" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="228.0" y="320.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">编译期：constexpr 决定特化</text>
+<rect x="460" y="284" width="422" height="59" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="671.0" y="320.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">运行期：地址、尺寸与标量参数</text>
+</g></svg>
