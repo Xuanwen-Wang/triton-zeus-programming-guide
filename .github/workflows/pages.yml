@@ -19,18 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
-      - name: Install the pinned Pandoc release
-        env:
-          PANDOC_VERSION: 3.9.0.2
-          PANDOC_SHA256: a69abfababda8a56969a254b09f9553a7be89ddec00d4e0fe9fd585d71a67508
-        run: |
-          curl --fail --location --retry 3 \
-            "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz" \
-            --output "${RUNNER_TEMP}/pandoc.tar.gz"
-          echo "${PANDOC_SHA256}  ${RUNNER_TEMP}/pandoc.tar.gz" | sha256sum --check
-          tar -xzf "${RUNNER_TEMP}/pandoc.tar.gz" -C "${RUNNER_TEMP}"
-          echo "${RUNNER_TEMP}/pandoc-${PANDOC_VERSION}/bin" >> "${GITHUB_PATH}"
-      - name: Build and verify the website
+      - name: Prepare and verify the PDF publication
         run: |
           python3 scripts/build_site.py
           python3 scripts/check_site.py

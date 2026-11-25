@@ -2,9 +2,11 @@
 
 面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Triton 语言接口、算子开发与性能优化。当前版本 **v0.0.5**，包括 14 章、附录 A–D、31 个语言 API 条目和 8 个完整 kernel 示例。
 
-**[在线阅读](https://xuanwen-wang.github.io/triton-zeus-programming-guide/)** · **[下载 PDF](https://xuanwen-wang.github.io/triton-zeus-programming-guide/Triton-Zeus-Programming-Guide.pdf)** · [章节索引](OUTLINE.md) · [版本记录](CHANGELOG.md)
+**[在线阅读 / 下载 PDF](https://xuanwen-wang.github.io/triton-zeus-programming-guide/Triton-Zeus-Programming-Guide.pdf)** · [章节索引](OUTLINE.md) · [版本记录](CHANGELOG.md)
 
-网页版提供章节导航、全文搜索、代码复制和插图放大。网页版与 PDF 共用 `chapters/` 下的 Markdown 正文；`book.yaml` 管理版本、日期和章节顺序。示例程序位于 `examples/`，正文示意图由 `scripts/draw_*.py` 生成，可继续编辑。封面采用独立的近存计算主题插画，标题、公司名、版本与日期均由 Typst 排为矢量文字；[插画生成说明](assets/cover-art-v005.prompt.txt)与资产一同保留。
+指南统一以 PDF 发布，可在浏览器或 PDF 阅读器中阅读，使用书签和文内链接导航。网站首页直接打开 PDF，原 HTML 章节页面已下线。
+
+正文位于 `chapters/`，`book.yaml` 管理版本、日期和章节顺序。示例程序位于 `examples/`，正文示意图由 `scripts/draw_*.py` 生成，可继续编辑。封面采用独立的近存计算主题插画，标题、公司名、版本与日期均由 Typst 排为矢量文字；[插画生成说明](assets/cover-art-v005.prompt.txt)与资产一同保留。
 
 ## 阅读路线
 
@@ -30,7 +32,7 @@ python examples/vector_add.py --numel 2500 --run-device
 
 LDG 矩阵乘和 KV Cache 示例还需要配套的资源分配与 pack 接口，不能用普通 Tensor 地址替代 LDG 地址表。第 4、11–13 章说明相关宿主代码与资源生命周期。
 
-## 构建 PDF 与网站
+## 构建 PDF 与发布目录
 
 PDF 使用 Pandoc **3.9.0.2**、Typst **0.14.2** 与 Python。所需字体为 Noto Sans CJK SC、Noto Sans Mono CJK SC 和 Liberation Mono；数学字体由 Typst 提供。Python 渲染与 PDF 依赖见 `requirements-review.txt`。
 
@@ -43,13 +45,13 @@ python3 scripts/check_site.py
 python3 scripts/check_public_artifact.py
 ```
 
-如 Typst 不在 `PATH`，设置 `TYPST` 或使用 `--typst` 指定可执行文件。PDF 默认生成在工程根目录；本地网站生成在 `_site/`：
+如 Typst 不在 `PATH`，设置 `TYPST` 或使用 `--typst` 指定可执行文件。PDF 默认生成在工程根目录；`_site/` 只包含 PDF、版本信息和首页入口，可在本地预览：
 
 ```bash
 python3 -m http.server 8000 --directory _site
 ```
 
-`pdf-build.json` 记录 PDF 与全部输入的 SHA-256。网站构建检查正文、PDF、跨章节链接、锚点、插图和搜索索引的一致性。推送 `main` 后，GitHub Actions 使用固定版本的 Pandoc 构建网站并部署 GitHub Pages；如果 PDF 与正文不匹配，检查会阻止部署。更新正文时应先重建 PDF，将正文、PDF 和 `pdf-build.json` 一同提交。
+`pdf-build.json` 记录 PDF 与全部输入的 SHA-256。推送 `main` 后，GitHub Actions 核对 PDF 与正文身份，并部署 PDF 发布目录。如果 PDF 与正文不匹配，检查会阻止部署。更新正文时应先重建 PDF，将正文、PDF 和 `pdf-build.json` 一同提交。
 
 ## 验证范围
 

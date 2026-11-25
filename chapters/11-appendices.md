@@ -287,6 +287,7 @@ DT、外部搬运与 L2 Buffer 是不同概念。L2 Buffer 不等同于 PE 内�
 - 硬件章节：新增单 VP 内两组 32 lane 的对照图，分别说明宽模式和级联模式，以及 BF16、FP32 的有效元素范围。
 - LDG 章节：从数学矩阵、miniblock 切分和坐标出发重组布局说明，分开介绍 Dense/Blocked、UScale 和页表寻址；补充具体元素到物理地址的逐步推导。
 - 量化与 KV Cache 章节：补充 UScale 的 lane、页内与跨页坐标，以及 K/V 的槽位和字节偏移；区分 USaddr 系数地址与 KV 索引表。
+- 发布方式：统一提供 PDF 在线阅读与下载，网站首页直接打开 PDF；原 HTML 章节页面下线。
 
 #### v0.0.4 {.unnumbered}
 
@@ -304,6 +305,8 @@ DT、外部搬运与 L2 Buffer 是不同概念。L2 Buffer 不等同于 PE 内�
 
 #### v0.0.3 {.unnumbered}
 
+::: {.keep}
+
 更新日期：2026-11-25。
 
 - 硬件与近存架构章节：扩充双核、每核多 VP/DT、PE 数据路径和理论吞吐换算，增加硬件总图。
@@ -313,6 +316,8 @@ DT、外部搬运与 L2 Buffer 是不同概念。L2 Buffer 不等同于 PE 内�
 - 调试、性能与完整实例章节：补充工作集计算、流水依赖、独立操作并行、Softmax 有效域和 BF16 融合语义。
 - 量化与 Attention 章节：新增 INT4 配对、UScale 页、分页 KV 更新、QK/PV 布局和在线 Softmax 推导；配套增加布局检查及示例。
 
+:::
+
 #### v0.0.2 {.unnumbered}
 
 更新日期：2026-11-24。
@@ -321,8 +326,9 @@ DT、外部搬运与 L2 Buffer 是不同概念。L2 Buffer 不等同于 PE 内�
 - 算子实例章节：加入 BF16 向量加法、RMSNorm、Matmul 和 Fused Add RMSNorm，说明 FP32 累加与 BF16 输出转换。
 - 全书版式：加入矢量示意图、代码块、表格和交叉引用，完成初稿逐页审阅。
 
-::: {.keep}
 #### v0.0.1 {.unnumbered}
+
+::: {.keep}
 
 更新日期：2026-11-24。
 

@@ -1,67 +1,68 @@
 #!/usr/bin/env python3
-"""Check every local website link, anchor, asset and published PDF identity."""
+"""Verify the PDF publication, homepage and absence of the retired HTML reader."""
 
 import hashlib
 import json
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "_site"
 
 
-class Page(HTMLParser):
+class Redirect(HTMLParser):
     def __init__(self, path):
         super().__init__(convert_charrefs=True)
-        self.ids, self.references, self.duplicates = set(), [], []
+        self.refresh, self.canonical, self.links = [], [], []
+        self.reader_content = False
         self.feed(path.read_text())
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
-        if "id" in attrs:
-            if attrs["id"] in self.ids:
-                self.duplicates.append(attrs["id"])
-            self.ids.add(attrs["id"])
-        for key in ("href", "src"):
-            if key in attrs:
-                self.references.append(attrs[key])
+        if tag == "meta" and attrs.get("http-equiv", "").lower() == "refresh":
+            self.refresh.append(attrs.get("content"))
+        if tag == "link" and attrs.get("rel") == "canonical":
+            self.canonical.append(attrs.get("href"))
+        if tag == "a":
+            self.links.append(attrs.get("href"))
+        if tag in {"article", "script", "iframe", "embed", "object"}:
+            self.reader_content = True
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def main():
-    pages = {path: Page(path) for path in SITE.glob("*.html")}
-    errors, total = [], 0
-    for path, page in pages.items():
-        errors.extend(f"{path.name}: duplicate id {identifier}" for identifier in page.duplicates)
-        for reference in page.references:
-            parts = urlsplit(reference)
-            if parts.scheme or parts.netloc:
-                continue
-            total += 1
-            target = (path.parent / unquote(parts.path)).resolve() if parts.path else path
-            if not target.is_relative_to(SITE) or not target.is_file():
-                errors.append(f"{path.name}: missing or invalid target {reference}")
-            elif parts.fragment and target in pages and unquote(parts.fragment) not in pages[target].ids:
-                errors.append(f"{path.name}: missing anchor {reference}")
     build = json.loads((SITE / "build-info.json").read_text())
+    pdf = json.loads((ROOT / "pdf-build.json").read_text())
+    errors = []
+    if build["mode"] != "pdf-only" or build["version"] != pdf["version"]:
+        errors.append("The publication mode or version is incorrect")
+    if build["pdf_sha256"] != pdf["sha256"] or digest(SITE / build["pdf"]) != pdf["sha256"]:
+        errors.append("Published PDF differs from the reviewed PDF")
+    if digest(ROOT / build["pdf"]) != pdf["sha256"]:
+        errors.append("Source PDF changed since build")
     for name, expected in build["source_sha256"].items():
-        if hashlib.sha256((ROOT / name).read_bytes()).hexdigest() != expected:
-            errors.append(f"Website source changed since build: {name}")
-    if hashlib.sha256((SITE / "Triton-Zeus-Programming-Guide.pdf").read_bytes()).hexdigest() != build["pdf_sha256"]:
-        errors.append("Website PDF differs from its manifest")
-    if (ROOT / "pdf-build.json").is_file():
-        pdf = json.loads((ROOT / "pdf-build.json").read_text())
-        if pdf["sha256"] != build["pdf_sha256"]:
-            errors.append("PDF build identity differs from website PDF")
-        for name, expected in pdf["inputs"].items():
-            if hashlib.sha256((ROOT / name).read_bytes()).hexdigest() != expected:
-                errors.append(f"PDF input changed since build: {name}")
-    for entry in json.loads((SITE / "search-index.json").read_text()):
-        parts = urlsplit(entry["url"])
-        target = SITE / unquote(parts.path)
-        if target not in pages or unquote(parts.fragment) not in pages[target].ids:
-            errors.append(f"Search result is not reachable: {entry['url']}")
-    print(json.dumps({"html_pages": len(pages), "local_links": total, "errors": errors}, ensure_ascii=False, indent=2))
+        if digest(ROOT / name) != expected:
+            errors.append(f"Publication source changed since build: {name}")
+    for name, expected in pdf["inputs"].items():
+        if digest(ROOT / name) != expected:
+            errors.append(f"PDF input changed since build: {name}")
+
+    page = Redirect(SITE / "index.html")
+    target = build["pdf"]
+    if page.refresh != ["0;url=" + target] or page.canonical != [target] or page.links != [target]:
+        errors.append("Incorrect homepage destination or fallback link")
+    if page.reader_content:
+        errors.append("Unexpected HTML reader or embedded viewer")
+
+    allowed = {"index.html", build["pdf"], "build-info.json", ".nojekyll"}
+    actual = {p.relative_to(SITE).as_posix() for p in SITE.rglob("*") if p.is_file()}
+    if actual != allowed:
+        errors.append(f"Unexpected or missing publication files: {sorted(actual ^ allowed)}")
+    print(json.dumps({"mode": build["mode"], "pdf_pages": pdf["page_count"],
+                      "published_files": len(actual), "errors": errors}, ensure_ascii=False, indent=2))
     if errors:
         raise SystemExit(1)
 

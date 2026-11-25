@@ -104,8 +104,12 @@ def main():
     inputs += sorted((ROOT / "examples").glob("*.py"))
     if (ROOT / "validation-summary.json").is_file():
         inputs.append(ROOT / "validation-summary.json")
+    final_reader = PdfReader(output)
     manifest = {
         "pdf": str(output.relative_to(ROOT)), "sha256": digest(output),
+        "version": re.search(r"^version:\s*(v[0-9.]+)\s*$",
+                             (ROOT / "book.yaml").read_text(), re.MULTILINE).group(1),
+        "page_count": len(final_reader.pages),
         "pandoc": subprocess.check_output(["pandoc", "--version"], text=True).splitlines()[0],
         "typst": subprocess.check_output([typst, "--version"], text=True).strip(),
         "pypdf": pypdf.__version__,

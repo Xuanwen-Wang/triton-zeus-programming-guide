@@ -1,6 +1,6 @@
 # Triton Zeus 编程指南 v0.0.5 章节索引
 
-网页版与 PDF 共用以下正文。章节顺序由 `book.yaml` 管理。
+PDF 使用以下正文。章节顺序由 `book.yaml` 管理。
 
 - [版权声明](chapters/00-copyright.md)
 - [前言](chapters/00-preface.md)
