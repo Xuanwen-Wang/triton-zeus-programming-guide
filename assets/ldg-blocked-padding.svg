@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="744" viewBox="0 0 900 744">
+<title>W[256,256] 的 Dense、紧排 Blocked 和带 padding Blocked</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="32" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">BF16 · W[256,256] · 有效数据 128 KiB</text>
+<text x="168" y="82" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">K 0–127</text>
+<text x="296" y="82" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">K 128–255</text>
+<text x="86" y="90" font-size="20" fill="#627987" font-weight="400" text-anchor="end">N ↓</text>
+<text x="86" y="137" font-size="20" fill="#627987" font-weight="400" text-anchor="end">0–127</text>
+<rect x="104" y="96" width="128" height="70" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="168" y="127" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">A</text>
+<text x="168" y="154" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">32 KiB</text>
+<rect x="232" y="96" width="128" height="70" rx="0" fill="#dfeaf5" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="296" y="127" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">B</text>
+<text x="296" y="154" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">32 KiB</text>
+<text x="86" y="207" font-size="20" fill="#627987" font-weight="400" text-anchor="end">128–255</text>
+<rect x="104" y="166" width="128" height="70" rx="0" fill="#FFF2DC" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="168" y="197" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">C</text>
+<text x="168" y="224" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">32 KiB</text>
+<rect x="232" y="166" width="128" height="70" rx="0" fill="#ece5f4" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="296" y="197" font-size="27" fill="#183D52" font-weight="600" text-anchor="middle">D</text>
+<text x="296" y="224" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">32 KiB</text>
+<polyline points="373,166 414,166" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="430" y="96" width="214" height="140" rx="6" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="537" y="126" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">独立块 0</text>
+<text x="537" y="155" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">W[256,128]</text>
+<rect x="430" y="170" width="107" height="66" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="483.5" y="212" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">A</text>
+<rect x="537" y="170" width="107" height="66" rx="0" fill="#FFF2DC" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="590.5" y="212" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">C</text>
+<text x="537" y="264" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">64 KiB</text>
+<rect x="666" y="96" width="214" height="140" rx="6" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="773" y="126" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">独立块 1</text>
+<text x="773" y="155" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">W[256,128]</text>
+<rect x="666" y="170" width="107" height="66" rx="0" fill="#dfeaf5" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="719.5" y="212" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">B</text>
+<rect x="773" y="170" width="107" height="66" rx="0" fill="#ece5f4" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="826.5" y="212" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">D</text>
+<text x="773" y="264" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">64 KiB</text>
+<text x="20" y="340" font-size="25" fill="#183D52" font-weight="600" text-anchor="start">Dense</text>
+<text x="20" y="370" font-size="21" fill="#627987" font-weight="400" text-anchor="start">整矩阵 pack</text>
+<text x="20" y="460" font-size="25" fill="#183D52" font-weight="600" text-anchor="start">Blocked</text>
+<text x="20" y="490" font-size="21" fill="#627987" font-weight="400" text-anchor="start">紧排</text>
+<text x="20" y="580" font-size="25" fill="#183D52" font-weight="600" text-anchor="start">Blocked</text>
+<text x="20" y="610" font-size="21" fill="#627987" font-weight="400" text-anchor="start">带 padding</text>
+<rect x="208.0" y="310" width="112.0" height="62" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="264.0" y="351" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">A</text>
+<rect x="320.0" y="310" width="112.0" height="62" rx="0" fill="#dfeaf5" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="376.0" y="351" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">B</text>
+<rect x="432.0" y="310" width="112.0" height="62" rx="0" fill="#FFF2DC" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="488.0" y="351" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">C</text>
+<rect x="544.0" y="310" width="112.0" height="62" rx="0" fill="#ece5f4" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="600.0" y="351" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">D</text>
+<polyline points="208.0,372 208.0,379" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="208.0" y="402" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">0</text>
+<polyline points="432.0,372 432.0,379" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="432.0" y="402" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">64</text>
+<polyline points="656.0,372 656.0,379" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="656.0" y="402" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">128</text>
+<text x="684" y="349" font-size="23" fill="#183D52" font-weight="600" text-anchor="start">总计 128 KiB</text>
+<text x="684" y="379" font-size="19" fill="#627987" font-weight="400" text-anchor="start">刻度单位：KiB</text>
+<text x="20" y="520" font-size="18" fill="#627987" font-weight="400" text-anchor="start">aligned_size = 0</text>
+<rect x="208.0" y="430" width="112.0" height="62" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="264.0" y="471" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">A</text>
+<rect x="320.0" y="430" width="112.0" height="62" rx="0" fill="#FFF2DC" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="376.0" y="471" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">C</text>
+<rect x="432.0" y="430" width="112.0" height="62" rx="0" fill="#dfeaf5" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="488.0" y="471" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">B</text>
+<rect x="544.0" y="430" width="112.0" height="62" rx="0" fill="#ece5f4" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="600.0" y="471" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">D</text>
+<rect x="208.0" y="430" width="224.0" height="62" rx="0" fill="none" stroke="#147D89" stroke-width="1.5"/>
+<rect x="432.0" y="430" width="224.0" height="62" rx="0" fill="none" stroke="#147D89" stroke-width="1.5"/>
+<polyline points="208.0,492 208.0,499" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="208.0" y="522" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">0</text>
+<polyline points="432.0,492 432.0,499" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="432.0" y="522" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">64</text>
+<polyline points="656.0,492 656.0,499" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="656.0" y="522" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">128</text>
+<text x="684" y="469" font-size="23" fill="#183D52" font-weight="600" text-anchor="start">总计 128 KiB</text>
+<text x="20" y="640" font-size="18" fill="#627987" font-weight="400" text-anchor="start">aligned_size = 96</text>
+<rect x="208.0" y="550" width="112.0" height="62" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="264.0" y="591" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">A</text>
+<rect x="320.0" y="550" width="112.0" height="62" rx="0" fill="#FFF2DC" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="376.0" y="591" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">C</text>
+<rect x="544.0" y="550" width="112.0" height="62" rx="0" fill="#dfeaf5" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="600.0" y="591" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">B</text>
+<rect x="656.0" y="550" width="112.0" height="62" rx="0" fill="#ece5f4" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="712.0" y="591" font-size="28" fill="#183D52" font-weight="600" text-anchor="middle">D</text>
+<rect x="432.0" y="550" width="112.0" height="62" rx="0" fill="#E9EDF0" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="488.0" y="575" font-size="20" fill="#627987" font-weight="600" text-anchor="middle">间隔</text>
+<text x="488.0" y="601" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">32 KiB</text>
+<rect x="768.0" y="550" width="112.0" height="62" rx="0" fill="#E9EDF0" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="824.0" y="575" font-size="20" fill="#627987" font-weight="600" text-anchor="middle">间隔</text>
+<text x="824.0" y="601" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">32 KiB</text>
+<rect x="208.0" y="550" width="336.0" height="62" rx="0" fill="none" stroke="#147D89" stroke-width="1.5"/>
+<polyline points="208.0,654 208.0,664 544.0,664 544.0,654" fill="none" stroke="#147D89" stroke-width="2"/>
+<text x="376.0" y="697" font-size="22" fill="#147D89" font-weight="600" text-anchor="middle">96 KiB = 64 + 32</text>
+<rect x="544.0" y="550" width="336.0" height="62" rx="0" fill="none" stroke="#147D89" stroke-width="1.5"/>
+<polyline points="544.0,654 544.0,664 880.0,664 880.0,654" fill="none" stroke="#147D89" stroke-width="2"/>
+<text x="712.0" y="697" font-size="22" fill="#147D89" font-weight="600" text-anchor="middle">96 KiB = 64 + 32</text>
+<polyline points="208.0,612 208.0,619" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="208.0" y="642" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">0</text>
+<polyline points="432.0,612 432.0,619" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="432.0" y="642" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">64</text>
+<polyline points="544.0,612 544.0,619" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="544.0" y="642" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">96</text>
+<polyline points="768.0,612 768.0,619" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="768.0" y="642" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">160</text>
+<polyline points="880.0,612 880.0,619" fill="none" stroke="#627987" stroke-width="2"/>
+<text x="880.0" y="642" font-size="20" fill="#627987" font-weight="400" text-anchor="end">192</text>
+<text x="18" y="732" font-size="18" fill="#627987" font-weight="400" text-anchor="start">带 padding：两槽共 192 KiB，载荷仍为 128 KiB；灰色区域不含有效权重。</text>
+</g></svg>

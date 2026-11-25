@@ -1,6 +1,6 @@
 # Triton Zeus 编程指南
 
-面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Zeus 编程接口、算子开发与性能优化。当前工作稿 **v0.0.6**，包括 14 章、附录 A–D 和 8 个完整 kernel 示例。第四章结构尚待确认，公开 PDF 仍为 v0.0.5。
+面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Zeus 编程接口、算子开发与性能优化。当前版本 **v0.0.6**，共 186 页，包括 14 章、附录 A–D、33 张正文矢量图和 8 个完整 kernel 示例。第四章先给出布局总览，再分别介绍 Weight 与分页 KV Cache。
 
 **[在线阅读 / 下载 PDF](https://xuanwen-wang.github.io/triton-zeus-programming-guide/Triton-Zeus-Programming-Guide.pdf)** · [章节索引](OUTLINE.md) · [版本记录](CHANGELOG.md)
 
@@ -52,6 +52,30 @@ python3 -m http.server 8000 --directory _site
 ```
 
 `pdf-build.json` 记录 PDF 与全部输入的 SHA-256。推送 `main` 后，GitHub Actions 核对 PDF 与正文身份，并部署 PDF 发布目录。如果 PDF 与正文不匹配，检查会阻止部署。更新正文时应先重建 PDF，将正文、PDF 和 `pdf-build.json` 一同提交。
+
+`review_pdf.py` 将全部页面渲染到 `review/render-<PDF哈希前缀>/`，并记录书签、链接和页面边界检查。发布前还需实际查看页面；结构检查通过不等于版式审阅完成。只修改不参与 PDF 构建的维护文档时，无需重建 PDF。
+
+## 维护入口
+
+开始修改前阅读 [AGENTS.md](AGENTS.md)，其中约定技术取证、图表与提示框、版本同步、逐页审阅和发布验证。贡献者入口见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+| 文件或目录 | 内容 |
+|---|---|
+| `book.yaml`、`chapters/` | 版本与章节顺序、客户正文 |
+| `layout/` | Typst 模板与 Pandoc 过滤器 |
+| `scripts/draw_*.py`、`assets/` | 图表生成器及资产 |
+| `examples/` | 示例程序和宿主布局检查 |
+| `OUTLINE.md`、`CHANGELOG.md` | 章节索引和逐版变更 |
+| `RELEASE-REVIEW.md`、`pdf-build.json` | 审阅结论、PDF 与输入身份 |
+| `reference/`、`review/` | 本地参考和审阅材料，不进入公开仓库 |
+
+布局检查可独立在 Host 上运行：
+
+```bash
+python3 examples/ldg_layout.py
+```
+
+该脚本检查逻辑坐标、物理布局、索引和追加写入的地址关系，不调用设备 kernel。
 
 ## 验证范围
 

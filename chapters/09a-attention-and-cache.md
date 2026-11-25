@@ -85,6 +85,8 @@ Table: 页表 `[3,1]` 下的 token 地址转换
 
 创建两个池时，`kind` 均为 `"weight"`；kernel 读写的 `memory_type` 同样使用 `"weight"`。本章 V 的准备过程是“逻辑转置，再按普通 weight 排列”。专用 `vcache` 还涉及其独立的物理列组交错与索引格式，不能用这次转置概括；两条路径的对照见 [LDG 数据布局与访问](#ldg-memory)。完整池形状、dtype、patch 参数、核所属关系都是格式的一部分，K/V 的数学含义相同并不保证存储对象可互换。
 
+本章的普通池保存未量化的 BF16 K/V，不使用 UScale；选择 `"weight"` 并不会自动启用量化。专用 `kcache/vcache` 不支持硬件 UScale 反量化，其 `weight_dtype`、`ugroup`、`uscale` 参数限制见[专用 K/V 装载](#api-cache-load)。
+
 ### 运行时更新的两种写入路径
 
 **LW 布局变换写入。** 新 token 仍以逻辑张量表示，由 `tl.store` 的 `store_mode="lw"`、目标 `memory_type` 和 `blocksize` 共同选择布局变换。随书专用 K/V 追加示例使用 BF16、D=128、page size=1024，写入已解析的 LDG payload 页；专用 V 的物理列组交错由这条路径处理。它不把输入当作已经打包好的物理字节，也不会替调用方分配页、查询请求页表或发布新的索引项。

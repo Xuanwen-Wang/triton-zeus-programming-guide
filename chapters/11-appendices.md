@@ -276,18 +276,19 @@ DT、外部搬运与 L2 Buffer 是不同概念。L2 Buffer 不等同于 PE 内�
 
 ### D.1 文档版本 {.unnumbered}
 
-#### v0.0.6 修订稿 {.unnumbered}
+#### v0.0.6 {.unnumbered}
 
 更新日期：2026-11-25。
 
 - 硬件章节：补充 GDG、LDG 的单组、单核及整设备设计容量，并区分物理容量与运行时可分配空间；GDG 与 L2 Buffer–LDG 读写采用 51.2 GB/s 口径。
 - LDG 带宽：分别说明 Zeus V3 的 15 credit / 23 拍模型和未来 Zeus V3 PRO 的两拍 miniblock 模型，移除 WL1 到 PE 端口容量叠加项。
+- LDG 布局：先给用途与布局概览，再分别介绍 Weight 与分页 KV Cache；矩阵坐标和七维变换并入 Weight，区分紧排、块间 padding 及带 UScale 的配套格式。
+- LDG 图解：新增布局分类、miniblock 与八路 WL1、三种 Weight 排列对照；以 64 KiB PATCH 和 96 KiB 槽位说明 padding 与容量。
 - Zeus 编程接口：替换通用语言 API 罗列，集中说明特殊 load/store、量化与分页参数、专用计算、执行提示和提前退出约束。
+- KV Cache 接口：明确专用 kcache/vcache 不接受 weight_dtype、ugroup、uscale 反量化参数，并与普通 Weight 形式承载 K/V 的示例分开说明。
 - 性能与实例：将自动双缓冲标为实验性、不完善、暂不推荐；说明在 kernel 中显式组织预取、双工作区及复用依赖的方法。
 - 量化与缓存：明确静态权重和 scale 在 launch 前完成布局准备、LDG 写入及同步；补充动态 KV 的 LW 布局写入与分段 ST 路径。
 - 全书版式：加入“注意、提示、注解”三类彩色框，突出 Grid、LDG 参数 ABI、数据准备和迁移约束；沿用仓库最新封面。
-
-本稿先完成第四章以外的修订，第四章正文保留上一版，待章节结构确认后统一修订和发行。
 
 #### v0.0.5 {.unnumbered}
 

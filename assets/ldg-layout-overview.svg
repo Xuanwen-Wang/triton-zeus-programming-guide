@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="640" viewBox="0 0 900 640">
+<title>LDG 用途：Weight 布局与分页 KV</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="31" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">先区分用途，再选择布局与访问接口</text>
+<rect x="310" y="55" width="280" height="64" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450.0" y="94.0" font-size="26" fill="#183D52" font-weight="600" text-anchor="middle">LDG 数据</text>
+<polyline points="450,119 450,145 230,145 230,175" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="450,119 450,145 670,145 670,175" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="20" y="175" width="420" height="425" rx="12" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="460" y="175" width="420" height="425" rx="12" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="40" y="212" font-size="25" fill="#183D52" font-weight="600" text-anchor="start">Weight · 矩阵权重</text>
+<text x="40" y="245" font-size="21" fill="#627987" font-weight="400" text-anchor="start">存储视图 W[N,K]</text>
+<rect x="40" y="273" width="380" height="64" rx="7" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="56" y="300" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">Dense</text>
+<text x="56" y="326" font-size="19" fill="#627987" font-weight="400" text-anchor="start">对完整矩阵连续 pack</text>
+<rect x="40" y="348" width="380" height="64" rx="7" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="56" y="375" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">Blocked · 紧排</text>
+<text x="56" y="401" font-size="19" fill="#627987" font-weight="400" text-anchor="start">独立块依次紧密存放</text>
+<rect x="40" y="423" width="380" height="64" rx="7" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="56" y="450" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">Blocked · 带 padding</text>
+<text x="56" y="476" font-size="19" fill="#627987" font-weight="400" text-anchor="start">固定槽尾保留未用空间</text>
+<text x="40" y="535" font-size="22" fill="#147D89" font-weight="600" text-anchor="start">分组量化可配套 UScale</text>
+<text x="40" y="565" font-size="19" fill="#627987" font-weight="400" text-anchor="start">UScale 是量化参数，不是另一种布局</text>
+<text x="480" y="212" font-size="25" fill="#183D52" font-weight="600" text-anchor="start">分页 KV · 键 / 值缓存</text>
+<text x="480" y="245" font-size="21" fill="#627987" font-weight="400" text-anchor="start">页间按表项定位，物理页可离散</text>
+<rect x="490" y="279" width="140" height="52" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="560.0" y="312.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">逻辑页 0</text>
+<rect x="720" y="279" width="140" height="52" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="790.0" y="312.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">逻辑页 1</text>
+<text x="675" y="363" font-size="19" fill="#627987" font-weight="400" text-anchor="middle">物理页（示意）</text>
+<rect x="490" y="383" width="140" height="52" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="560.0" y="416.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">页 0</text>
+<polyline points="560,331 560,383" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="720" y="383" width="140" height="52" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="790.0" y="416.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">页 1</text>
+<polyline points="790,331 790,383" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="675" y="415" font-size="29" fill="#627987" font-weight="600" text-anchor="middle">···</text>
+<text x="480" y="472" font-size="21" fill="#183D52" font-weight="600" text-anchor="start">页内使用对应的 K / V 数据布局</text>
+<rect x="490" y="491" width="168" height="52" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="574.0" y="524.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">K 布局</text>
+<rect x="692" y="491" width="168" height="52" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="776.0" y="524.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">V 布局</text>
+<text x="480" y="579" font-size="21" fill="#147D89" font-weight="600" text-anchor="start">专用 KV 接口不支持 UScale</text>
+<text x="18" y="628" font-size="18" fill="#627987" font-weight="400" text-anchor="start">分页描述页间地址关系；每个页内仍有明确的数据布局。</text>
+</g></svg>

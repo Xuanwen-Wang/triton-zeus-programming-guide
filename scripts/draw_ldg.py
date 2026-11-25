@@ -182,8 +182,178 @@ def index_pages():
     d.save("ldg-v005-index-pages.svg")
 
 
+def layout_overview():
+    """Separate resource usage from layouts and quantization metadata."""
+    d = Diagram(640, "LDG 用途：Weight 布局与分页 KV")
+    d.label(20, 31, "先区分用途，再选择布局与访问接口", NAVY)
+    d.box(310, 55, 280, 64, "LDG 数据", fill=PALE, size=26)
+    for center in (230, 670):
+        d.path([(450, 119), (450, 145), (center, 145),
+                (center, 175)])
+
+    d.rect(20, 175, 420, 425, "#FFFFFF", LINE, 12)
+    d.rect(460, 175, 420, 425, "#FFFFFF", LINE, 12)
+    d.text(40, 212, "Weight · 矩阵权重", 25, NAVY, 600)
+    d.text(40, 245, "存储视图 W[N,K]", 21, MUTED)
+    for y, title, subtitle, fill in [
+        (273, "Dense", "对完整矩阵连续 pack", AQUA),
+        (348, "Blocked · 紧排", "独立块依次紧密存放", PALE),
+        (423, "Blocked · 带 padding", "固定槽尾保留未用空间", GOLD),
+    ]:
+        d.rect(40, y, 380, 64, fill, LINE, 7)
+        d.text(56, y + 27, title, 22, NAVY, 600)
+        d.text(56, y + 53, subtitle, 19, MUTED)
+    d.text(40, 535, "分组量化可配套 UScale", 22, TEAL, 600)
+    d.text(40, 565, "UScale 是量化参数，不是另一种布局", 19, MUTED)
+
+    d.text(480, 212, "分页 KV · 键 / 值缓存", 25, NAVY, 600)
+    d.text(480, 245, "页间按表项定位，物理页可离散", 21, MUTED)
+    for x, title in [(490, "逻辑页 0"), (720, "逻辑页 1")]:
+        d.box(x, 279, 140, 52, title, fill=PALE, size=21)
+    d.text(675, 363, "物理页（示意）", 19, MUTED, anchor="middle")
+    for x, title in [(490, "页 0"), (720, "页 1")]:
+        d.box(x, 383, 140, 52, title, fill=AQUA, size=22)
+        d.path([(x + 70, 331), (x + 70, 383)])
+    d.text(675, 415, "···", 29, MUTED, 600, "middle")
+    d.text(480, 472, "页内使用对应的 K / V 数据布局", 21, NAVY, 600)
+    d.box(490, 491, 168, 52, "K 布局", fill=AQUA, size=22)
+    d.box(692, 491, 168, 52, "V 布局", fill=GOLD, size=22)
+    d.text(480, 579, "专用 KV 接口不支持 UScale", 21, TEAL, 600)
+    d.note("分页描述页间地址关系；每个页内仍有明确的数据布局。")
+    d.save("ldg-layout-overview.svg")
+
+
+def miniblock_wl1():
+    """Show fixed byte granularity and shared access, not scheduling."""
+    d = Diagram(560, "16 KiB miniblock 的八个 2 KiB 片段与 WL1 归属")
+    d.label(20, 32, "固定字节粒度：一个 miniblock = 16 KiB", NAVY)
+    d.text(20, 68, "字节量固定；元素形状取决于数据类型", 22, MUTED)
+    d.rect(20, 96, 860, 64, AQUA, LINE, 8)
+    d.text(450, 137,
+           "BF16 示例：W[128,64] = 8192 个元素 × 2 B = 16 KiB",
+           24, NAVY, 600, "middle")
+    d.text(450, 202, "一个 miniblock · 8 个等长片段", 23,
+           NAVY, 600, "middle")
+    d.path([(20, 224), (20, 214), (880, 214), (880, 224)],
+           color=TEAL, arrow=False)
+
+    d.rect(20, 350, 860, 92, PALE, LINE, 8)
+    width = 860 / 8
+    for lane in range(8):
+        x = 20 + lane * width
+        d.rect(x, 232, width, 76, AQUA, "#FFFFFF", 0)
+        d.text(x + width / 2, 263, f"片段 {lane}", 22,
+               NAVY, 600, "middle")
+        d.text(x + width / 2, 293, "2 KiB", 21,
+               MUTED, anchor="middle")
+        d.box(x + 7, 371, width - 14, 50, f"WL1 {lane}",
+              fill="#FFFFFF", size=21)
+        d.path([(x + width / 2, 308), (x + width / 2, 371)])
+    d.path([(20, 457), (20, 467), (880, 467), (880, 457)],
+           color=TEAL, arrow=False)
+    d.text(450, 506, "8 路 WL1 共同完成对一个 miniblock 的访问", 25,
+           TEAL, 600, "middle")
+    d.note("箭头表示片段归属，不表示 8 个独立可调度操作，也不承诺单拍完成。")
+    d.save("ldg-miniblock-wl1.svg")
+
+
+def blocked_padding():
+    """Compare full packing, independent blocks, and 96 KiB slots."""
+    d = Diagram(744, "W[256,256] 的 Dense、紧排 Blocked 和带 padding Blocked")
+    d.label(20, 32, "BF16 · W[256,256] · 有效数据 128 KiB", NAVY)
+    for col, text in enumerate(("K 0–127", "K 128–255")):
+        d.text(168 + col * 128, 82, text, 20,
+               MUTED, anchor="middle")
+    d.text(86, 90, "N ↓", 20, MUTED, anchor="end")
+    for row, names in enumerate(("AB", "CD")):
+        d.text(86, 137 + row * 70,
+               "0–127" if row == 0 else "128–255",
+               20, MUTED, anchor="end")
+        for col, name in enumerate(names):
+            x, y = 104 + col * 128, 96 + row * 70
+            d.rect(x, y, 128, 70, COLORS["ABCD".index(name)],
+                   "#FFFFFF", 0)
+            d.text(x + 64, y + 31, name, 27, NAVY, 600, "middle")
+            d.text(x + 64, y + 58, "32 KiB", 19,
+                   MUTED, anchor="middle")
+    d.path([(373, 166), (414, 166)])
+    for index, names in enumerate(("AC", "BD")):
+        x = 430 + index * 236
+        d.rect(x, 96, 214, 140, "#FFFFFF", LINE, 6)
+        d.text(x + 107, 126, f"独立块 {index}", 22,
+               NAVY, 600, "middle")
+        d.text(x + 107, 155, "W[256,128]", 20,
+               MUTED, anchor="middle")
+        for col, name in enumerate(names):
+            d.rect(x + col * 107, 170, 107, 66,
+                   COLORS["ABCD".index(name)], "#FFFFFF", 0)
+            d.text(x + 53.5 + col * 107, 212, name, 28,
+                   NAVY, 600, "middle")
+        d.text(x + 107, 264, "64 KiB", 21, MUTED, anchor="middle")
+
+    origin, scale = 208, 3.5
+
+    def payload(y, offset, names):
+        for index, name in enumerate(names):
+            x = origin + (offset + index * 32) * scale
+            d.rect(x, y, 32 * scale, 62,
+                   COLORS["ABCD".index(name)], "#FFFFFF", 0)
+            d.text(x + 16 * scale, y + 41, name, 28,
+                   NAVY, 600, "middle")
+
+    def ticks(y, values):
+        for value in values:
+            x = origin + value * scale
+            d.path([(x, y), (x, y + 7)], arrow=False)
+            anchor = "end" if value == 192 else "middle"
+            d.text(x, y + 30, str(value), 20,
+                   MUTED, anchor=anchor)
+
+    for y, title, subtitle in [
+        (310, "Dense", "整矩阵 pack"),
+        (430, "Blocked", "紧排"),
+        (550, "Blocked", "带 padding"),
+    ]:
+        d.text(20, y + 30, title, 25, NAVY, 600)
+        d.text(20, y + 60, subtitle, 21, MUTED)
+    payload(310, 0, "ABCD")
+    ticks(372, (0, 64, 128))
+    d.text(684, 349, "总计 128 KiB", 23, NAVY, 600)
+    d.text(684, 379, "刻度单位：KiB", 19, MUTED)
+
+    d.text(20, 520, "aligned_size = 0", 18, MUTED)
+    payload(430, 0, "ACBD")
+    for offset in (0, 64):
+        d.rect(origin + offset * scale, 430, 64 * scale, 62,
+               "none", TEAL, 0)
+    ticks(492, (0, 64, 128))
+    d.text(684, 469, "总计 128 KiB", 23, NAVY, 600)
+
+    d.text(20, 640, "aligned_size = 96", 18, MUTED)
+    payload(550, 0, "AC")
+    payload(550, 96, "BD")
+    for offset in (64, 160):
+        x = origin + offset * scale
+        d.rect(x, 550, 32 * scale, 62, "#E9EDF0", "#FFFFFF", 0)
+        d.text(x + 16 * scale, 575, "间隔", 20,
+               MUTED, 600, "middle")
+        d.text(x + 16 * scale, 601, "32 KiB", 19,
+               MUTED, anchor="middle")
+    for offset in (0, 96):
+        x = origin + offset * scale
+        d.rect(x, 550, 96 * scale, 62, "none", TEAL, 0)
+        d.path([(x, 654), (x, 664), (x + 96 * scale, 664),
+                (x + 96 * scale, 654)], color=TEAL, arrow=False)
+        d.text(x + 48 * scale, 697, "96 KiB = 64 + 32", 22,
+               TEAL, 600, "middle")
+    ticks(612, (0, 64, 96, 160, 192))
+    d.note("带 padding：两槽共 192 KiB，载荷仍为 128 KiB；灰色区域不含有效权重。")
+    d.save("ldg-blocked-padding.svg")
+
+
 def main():
-    for draw in (miniblocks, seven_dim, blocked, uscale, index_pages):
+    for draw in (miniblocks, seven_dim, blocked, uscale, index_pages,
+                 layout_overview, miniblock_wl1, blocked_padding):
         draw()
 
 

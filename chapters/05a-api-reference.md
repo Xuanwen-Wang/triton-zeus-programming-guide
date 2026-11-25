@@ -52,8 +52,8 @@ tl.load(
 |---|---|---|
 | `"default"` | 普通设备数据 | 保持专用参数为空 |
 | `"weight"` | LDG 矩阵及量化权重 | 可配 `weight_dtype`、`ugroup`、`uscale` |
-| `"kcache"` | 专用 K 索引及 payload 布局 | 必须指定 `page_size` |
-| `"vcache"` | 专用 V 索引及 payload 布局 | 必须指定 `page_size` |
+| `"kcache"` | 专用 K 索引及 payload 布局 | 必传 `page_size`；不接受量化扩展参数 |
+| `"vcache"` | 专用 V 索引及 payload 布局 | 必传 `page_size`；不接受量化扩展参数 |
 | `"uscale"` | UScale 页描述路径 | 普通量化调用使用 `uscale=` 绑定 |
 
 Table: load 的公开 memory_type 与参数配对
@@ -128,6 +128,8 @@ UScale 也可用于带分组缩放的 FP8 权重：此时保留 `ugroup` 及必�
 专用 K/V load 通过索引组织定位 payload。描述符基址代表该核的专用索引表，不能换成普通软件页表，也不能直接换成已解析的 payload 地址。表的编码和页内排列见[专用 K/V 页与索引表](#ldg-memory)。
 
 `page_size` 是物理页可容纳的逻辑 token 数，必须显式给出不小于 128 的 2 次幂。它不等于当前有效序列长度，也不等于一次读取的计算 tile 长度。除 `"kcache"`、`"vcache"` 外，其他 memory_type 不接受该参数。
+
+专用 K/V 路径不支持硬件 UScale 反量化，`weight_dtype`、`ugroup`、`uscale` 均须保持 `None`。这些量化扩展参数只用于 `memory_type="weight"`，不能与专用页访问组合。
 
 下面固定 BF16、每头 128 维、物理页长 1024，一次读取 128 个 token。`k_index_base` 指向按此格式准备的索引表，`seq_start` 是当前 tile 的逻辑起点。
 
@@ -512,6 +514,8 @@ def two_outputs(x_ptr, y_ptr, p_ptr, q_ptr, N,
 
 正式实现应先建立顺序执行且可验证的基线，再按[性能分析与调优](#performance)检查真实的数据依赖和执行时间。不能通过提前复用 buffer、删去必要依赖或扩大未验证输入域来制造表面上的重叠。
 
+:::: {.keep}
+
 ## 设备端提前退出 {#api-early-exit}
 
 ~~~python
@@ -544,3 +548,5 @@ def guarded_copy(out_ptr, in_ptr, flag_ptr, N,
 为了表达整个 kernel 的后续退出，调用应处于顶层、位于需要保护的操作之前。嵌入某个循环体或分支时，其作用只覆盖所在块的后续部分，不能把它理解为 Python 的函数级 `return`。
 
 这是一次已启动 kernel 内的设备判断，不会取消 Host 上的提交，也不会自动跳过其他核的工作。若算法含跨核等待，各核的退出条件必须与通信顺序兼容，避免一核退出而另一核继续等待。与输出初始化、stream 顺序及 owner 生命周期的配合，仍遵循[编译、装载与运行](#compile-and-run)中的规则。
+
+::::

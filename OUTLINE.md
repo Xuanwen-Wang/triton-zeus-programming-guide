@@ -1,4 +1,4 @@
-# Triton Zeus 编程指南 v0.0.6 修订稿章节索引
+# Triton Zeus 编程指南 v0.0.6 章节索引
 
 PDF 使用以下正文。章节顺序由 `book.yaml` 管理。
 
@@ -34,18 +34,12 @@ PDF 使用以下正文。章节顺序由 `book.yaml` 管理。
 
 源文件：[03a-ldg-memory.md](chapters/03a-ldg-memory.md)
 
-- 从 K×N 逻辑矩阵划分 miniblock
-- 将块划分写成七维变换
-- Dense、Blocked 与 PATCH
-- 数值格式与 UScale 物理页
-- 地址、指针表和描述符
-- 准备与写入 LDG
-- KV Cache 的两种编程契约
-- 专用 K/V 页与索引表
-- 追加一个 BF16 token
-- 从更新后的缓存计算 QK 与 PV
-- 生命周期、同步和资源复用
-- 常见错误与定位方法
+- LDG 用途与布局概览
+- miniblock 与对齐
+- Weight 布局：Dense、Blocked 紧排、Blocked 带 padding，以及 UScale
+- 分页 KV Cache 的离散布局
+- 数据准备、更新与读取
+- 布局选择与错误定位
 
 ## 5 Triton Zeus 编程模型
 

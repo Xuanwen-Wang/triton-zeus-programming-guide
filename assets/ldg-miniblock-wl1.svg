@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+<title>16 KiB miniblock 的八个 2 KiB 片段与 WL1 归属</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="32" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">固定字节粒度：一个 miniblock = 16 KiB</text>
+<text x="20" y="68" font-size="22" fill="#627987" font-weight="400" text-anchor="start">字节量固定；元素形状取决于数据类型</text>
+<rect x="20" y="96" width="860" height="64" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450" y="137" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">BF16 示例：W[128,64] = 8192 个元素 × 2 B = 16 KiB</text>
+<text x="450" y="202" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">一个 miniblock · 8 个等长片段</text>
+<polyline points="20,224 20,214 880,214 880,224" fill="none" stroke="#147D89" stroke-width="2"/>
+<rect x="20" y="350" width="860" height="92" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="20.0" y="232" width="107.5" height="76" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="73.75" y="263" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">片段 0</text>
+<text x="73.75" y="293" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="27.0" y="371" width="93.5" height="50" rx="8" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="73.75" y="403.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">WL1 0</text>
+<polyline points="73.75,308 73.75,371" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="127.5" y="232" width="107.5" height="76" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="181.25" y="263" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">片段 1</text>
+<text x="181.25" y="293" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="134.5" y="371" width="93.5" height="50" rx="8" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="181.25" y="403.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">WL1 1</text>
+<polyline points="181.25,308 181.25,371" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="235.0" y="232" width="107.5" height="76" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="288.75" y="263" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">片段 2</text>
+<text x="288.75" y="293" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="242.0" y="371" width="93.5" height="50" rx="8" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="288.75" y="403.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">WL1 2</text>
+<polyline points="288.75,308 288.75,371" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="342.5" y="232" width="107.5" height="76" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="396.25" y="263" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">片段 3</text>
+<text x="396.25" y="293" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="349.5" y="371" width="93.5" height="50" rx="8" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="396.25" y="403.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">WL1 3</text>
+<polyline points="396.25,308 396.25,371" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="450.0" y="232" width="107.5" height="76" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="503.75" y="263" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">片段 4</text>
+<text x="503.75" y="293" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="457.0" y="371" width="93.5" height="50" rx="8" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="503.75" y="403.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">WL1 4</text>
+<polyline points="503.75,308 503.75,371" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="557.5" y="232" width="107.5" height="76" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="611.25" y="263" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">片段 5</text>
+<text x="611.25" y="293" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="564.5" y="371" width="93.5" height="50" rx="8" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="611.25" y="403.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">WL1 5</text>
+<polyline points="611.25,308 611.25,371" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="665.0" y="232" width="107.5" height="76" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="718.75" y="263" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">片段 6</text>
+<text x="718.75" y="293" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="672.0" y="371" width="93.5" height="50" rx="8" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="718.75" y="403.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">WL1 6</text>
+<polyline points="718.75,308 718.75,371" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="772.5" y="232" width="107.5" height="76" rx="0" fill="#E7F3F3" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="826.25" y="263" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">片段 7</text>
+<text x="826.25" y="293" font-size="21" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="779.5" y="371" width="93.5" height="50" rx="8" fill="#FFFFFF" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="826.25" y="403.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">WL1 7</text>
+<polyline points="826.25,308 826.25,371" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="20,457 20,467 880,467 880,457" fill="none" stroke="#147D89" stroke-width="2"/>
+<text x="450" y="506" font-size="25" fill="#147D89" font-weight="600" text-anchor="middle">8 路 WL1 共同完成对一个 miniblock 的访问</text>
+<text x="18" y="548" font-size="18" fill="#627987" font-weight="400" text-anchor="start">箭头表示片段归属，不表示 8 个独立可调度操作，也不承诺单拍完成。</text>
+</g></svg>

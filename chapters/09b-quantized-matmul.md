@@ -1,6 +1,6 @@
 # 量化矩阵乘与 UScale {#quantized-matmul}
 
-低精度矩阵乘改变的不只是元素类型，还包括权重字节排列、缩放系数位置、描述符与参考计算。Zeus 可以从 LDG 消费量化权重，通过 UScale 提供按组缩放系数。本章以 FP8 激活、INT4 权重和 BF16 UScale 说明这些对象如何组成一致的计算。
+低精度矩阵乘改变的不只是元素类型，还包括权重字节排列、缩放系数位置、描述符与参考计算。本章使用 `memory_type="weight"` 从 LDG 消费量化权重，以 FP8 激活、INT4 权重和 BF16 UScale 说明按组缩放计算。专用 `kcache/vcache` 不支持这条 UScale 反量化路径；存储路径与物理格式的区别见 [LDG 数据布局与访问](#ldg-memory)。
 
 静态 weight 与 scale 在模型加载阶段按消费 kernel 的布局预先 pack，并写入对应核的 LDG。完成写入后，kernel 才能按描述符读取；不可变内容可供多次调用复用。下面的 INT4 配对、7D 排列和 UScale 页构造都属于这一步准备，`tl.load` 不会在每次读取时把普通线性数据现场打包。
 

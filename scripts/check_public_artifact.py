@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TOP = {"README.md", "OUTLINE.md", "CONTRIBUTING.md", "CHANGELOG.md", ".gitignore", ".gitattributes",
+TOP = {"README.md", "OUTLINE.md", "CONTRIBUTING.md", "CHANGELOG.md", "AGENTS.md", ".gitignore", ".gitattributes",
        "book.yaml", "requirements-review.txt", "Triton-Zeus-Programming-Guide.pdf",
        "pdf-build.json", "validation-summary.json", "RELEASE-REVIEW.md"}
 DIRECTORIES = {"chapters", "assets", "examples", "layout", "scripts", "site", ".github"}
