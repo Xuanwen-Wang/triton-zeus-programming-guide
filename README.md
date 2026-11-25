@@ -1,6 +1,6 @@
 # Triton Zeus 编程指南
 
-面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Zeus 编程接口、算子开发与性能优化。当前版本 **v0.0.6**，共 180 页，包括 14 章、附录 A–D、33 张正文矢量图和 8 个完整 kernel 示例。第四章先给出布局总览，再分别介绍 Weight 与分页 KV Cache。
+面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Zeus 编程接口、算子开发与性能优化。当前版本 **v0.0.6**，共 182 页，包括 14 章、附录 A–D、33 张正文矢量图和 8 个完整 kernel 示例。第四章先给出布局总览，再分别介绍 Weight 与分页 KV Cache。
 
 **[在线阅读 / 下载 PDF](https://xuanwen-wang.github.io/triton-zeus-programming-guide/Triton-Zeus-Programming-Guide.pdf)** · [章节索引](OUTLINE.md) · [版本记录](CHANGELOG.md)
 
