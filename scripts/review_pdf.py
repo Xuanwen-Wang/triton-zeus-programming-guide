@@ -3,15 +3,84 @@
 
 import argparse
 import hashlib
+from io import BytesIO
 import json
 import re
 from pathlib import Path
+from zipfile import ZipFile
 
 import fitz
 from PIL import Image, ImageDraw, ImageFont
 from pypdf import PdfReader
+from pypdf.generic import ArrayObject, ByteStringObject, DictionaryObject, IndirectObject, TextStringObject
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def string_bytes(value):
+    return bytes(value) if isinstance(value, ByteStringObject) else value.original_bytes
+
+
+def named_destinations(node):
+    if node is None:
+        return
+    node = node.get_object()
+    for child in node.get("/Kids", ()):
+        yield from named_destinations(child)
+    pairs = node.get("/Names", ())
+    for name, destination in zip(pairs[::2], pairs[1::2], strict=True):
+        destination = destination.get_object()
+        if isinstance(destination, DictionaryObject):
+            destination = destination["/D"]
+        yield string_bytes(name), destination
+
+
+def invalid_destinations(reader):
+    root = reader.trailer["/Root"]
+    tree = root["/Names"].get("/Dests") if "/Names" in root else None
+    names = dict(named_destinations(tree))
+    pages = {(page.indirect_reference.idnum, page.indirect_reference.generation)
+             for page in reader.pages}
+    failures = {}
+    for number, page in enumerate(reader.pages, 1):
+        for annotation in page.get("/Annots", ()):
+            link = annotation.get_object()
+            if link.get("/Subtype") != "/Link":
+                continue
+            destination = link.get("/Dest")
+            action = link["/A"] if "/A" in link else {}
+            if destination is None and action.get("/S") == "/GoTo":
+                destination = action["/D"]
+            if destination is None:
+                continue
+            destination = destination.get_object()
+            if isinstance(destination, (ByteStringObject, TextStringObject)):
+                destination = names.get(string_bytes(destination))
+            target = destination[0] if isinstance(destination, ArrayObject) and destination else None
+            if not isinstance(target, IndirectObject) or (target.idnum, target.generation) not in pages:
+                failures.setdefault(number, []).append(annotation.idnum)
+    return failures
+
+
+def check_example_bundle(reader, pdf_sha):
+    build = json.loads((ROOT / "pdf-build.json").read_text())
+    bundle = build.get("example_bundle")
+    if pdf_sha != build["sha256"] or bundle is None:
+        return None
+    name = bundle["name"]
+    attachments = reader.attachments
+    if list(attachments) != [name] or len(attachments[name]) != 1:
+        raise SystemExit("Unexpected PDF attachment set")
+    data = attachments[name][0]
+    if hashlib.sha256(data).hexdigest() != bundle["sha256"]:
+        raise SystemExit("The PDF attachment does not match its manifest")
+    with ZipFile(BytesIO(data)) as archive:
+        if archive.namelist() != bundle["files"]:
+            raise SystemExit("Unexpected example bundle contents")
+        for path in bundle["files"]:
+            if hashlib.sha256(archive.read(path)).hexdigest() != build["inputs"][path]:
+                raise SystemExit(f"Example attachment source differs from manifest: {path}")
+    return bundle
 
 
 def main():
@@ -25,6 +94,8 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     document = fitz.open(path)
     reader = PdfReader(path, strict=True)
+    broken = invalid_destinations(reader)
+    bundle = check_example_bundle(reader, sha)
     outlines = document.get_toc()
     navigation = []
     for title in ("目录", "插图目录", "表格目录"):
@@ -63,6 +134,7 @@ def main():
         total_links += len(links)
         bad_links = [link for link in links if link["kind"] == fitz.LINK_GOTO
                      and not 0 <= link.get("page", -1) < len(document)]
+        bad_links.extend({"invalid_annotation": item} for item in broken.get(i + 1, ()))
         if outside or bad_links or not text.strip():
             failures.append(i+1)
         pages.append({
@@ -94,6 +166,7 @@ def main():
         "page_count": len(document), "toc_entries": len(document.get_toc()),
         "navigation_bookmarks": navigation,
         "links": total_links, "structural_failure_pages": failures,
+        "example_bundle": bundle,
         "internal_path_or_placeholder_matches": sensitive,
         "pages": pages,
     }

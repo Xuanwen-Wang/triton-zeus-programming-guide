@@ -65,6 +65,10 @@ INT4 的完整最小实例与布局见[量化矩阵乘与 UScale](#quantized-mat
 | `parallel_executor_hint` | kernel 顶层标记 | 开启独立操作并行分析 |
 | `double_buffer_hint` | kernel 顶层标记 | 实验性、不完善，暂不推荐使用 |
 | `softmax` | FP32/BF16，rank 1–4 | 最内维归约，前导维均为 1 |
+| `fa2_online_softmax_update` | 静态 FP32 `[H,S]`、两份 `[H,1]` 状态 | 最内维，返回状态、概率 tile 与 LSE |
+| `sigmoid`、`log`、`softplus` | FP32 算术入口，按近似方法准备输入 | 适用方法和输入域见[专用计算](#api-reference) |
+| `make_pwlf`、`pwlf` | FP32 断点和系数，1–64 段 | 输入域由表决定 |
+| `floor` | FP32、BF16、FP8 E4M3FN、有符号 INT8 | 返回相同 dtype，索引转换另行完成 |
 | `early_exit_if` | 单元素 FP32 整数标志，推荐 0/1 | 顶层调用；后续输出保持原值 |
 | `exp_with_lut` | FP32 输入与完整系数表 | 调用方负责系数精度 |
 | `sigmoid_with_exp_lut` | FP32 输入与两组表参数 | 按指定 exp 表构造路径 |
@@ -79,7 +83,16 @@ Table: 平台扩展的契约速查
 
 普通指针 tile 使用逐元素 mask，块指针使用整维 `boundary_check`。二者的有效区域表达不同，不在同一调用中混用。矩形块的 `padding_option` 决定越界 load 的数值；store 没有通过填充值写入越界区域的语义。
 
-LDG 访问还需要匹配物理组织。`memory_type="weight"` 是保留的接口字符串；KCache 与 VCache 使用各自布局契约。`store_mode`、`blocksize` 等专用参数按相应接口解释，不能推断为普通线性数组的通用选项。
+下表给出 Zeus V3 指南涉及的资源组合。接口条件由配套实现核对，执行用例与版本以[附录 D](#versions-and-examples)和交付 SDK 的支持清单为准。
+
+| 路径 | 所需资源与约束 | 示例范围 |
+|---|---|---|
+| GDG 普通装载或写入 | 指针加 mask，或块指针加边界；`memory_type="default"` | BF16 向量加法，FP32 单行 Softmax |
+| LDG 普通 Weight | 每核 payload 与匹配的 pack，`memory_type="weight"` | BF16 Matmul 的 `M=N=256,K=384` |
+| LDG 专用 K/V | 读基址是专用索引，写基址是 payload 并使用 LW | BF16，D=128、页长 1024 的 K/V 追加 |
+| LDG Weight 与 UScale | 明确 `ugroup`，相邻系数或显式对齐页首 | E4M3FN×INT4，G=128 的相邻系数 |
+
+Table: 访存接口、资源与随书用例配对
 
 地址有效性与所有权是独立条件。某个地址落在分配范围内，不代表两个核可以同时改写它所在的外部字。调试输出损坏时，应同时检查元素范围、扩展访存范围、实际写入者和跨 stream 顺序，参见[参数 ABI 与资源信息](#argument-resources)。
 
@@ -195,6 +208,8 @@ Table: 模式与启动配置
 
 环境变量与 Python 关键字属于不同作用域。比如 `zeus_compiler_extra_flags` 只替换该次编译子进程的选项，不应改写其他同时运行任务的进程环境。AOT 发布时，完整保留有效编译选项与特化身份。
 
+编译器解析 VP/DT 数量时，依次采用显式 `--num-vp` / `--num-dt`、相应的 `ZEUS_NUM_VP` / `ZEUS_NUM_DT` 环境值及缺省值 1。记录有效值，避免把多个终端的继承设置混入一次性能对照。
+
 **模式选择。** 优先使用单次 `zeus_mode`，否则读取 `ZECC_KERNEL_MODE`，缺省为 `jit`。值归一化为小写后必须是 `jit`、`aot`、`hybrid` 之一。`zeus_enable_jit=False` 在此基础上收紧为 AOT；设为 `True` 不能扩大显式 AOT 模式。
 
 **特化记录。** `ZECC_AOT_RECORD_FILE` 指向 JSONL 文件，每行记录一次调用的源码身份与编译元数据。写入采用文件锁，适合多个进程采集到同一个文件。记录实参数值的完整数据集仍由测试程序负责，JSONL 不包含用于数值重放的全部输入张量。
@@ -256,10 +271,18 @@ Table: 编程模型术语
 | 术语 | 含义 |
 |---|---|
 | VP | 承担向量计算的执行单元 |
+| lane | VP 内表示元素并行位置。执行轨迹中的 lane 则按实际命令通道命名 |
 | PE | 承担矩阵类计算的执行单元 |
 | DT | 承担数据变换的执行单元 |
 | L2 Buffer | 编译器管理的片上工作存储，保存 tile 与中间结果 |
 | LDG | 承载权重和 KV cache 的 3D DRAM |
+| GDG | 用于普通输入、输出和工作数据的设备全局存储 |
+| WL1 | LDG 矩阵读取到 PE 的数据通路。一个 miniblock 含八路各 2 KiB 的份额 |
+| CT | 管理命令发射、控制流及同步的执行单元 |
+| LW / WA | LW 转换逻辑 tile 的布局，WA 参与向 LDG 的写入 |
+| AL1 / OL1 | PE 内部的激活输入与输出缓冲 |
+| UScale | 为 packed Weight 配套的分组量化系数区 |
+| PATCH | Weight 分块打包时的独立布局单元 |
 | TTIR | Triton 前端的中间表示 |
 | Linalg / MemRef | 表达结构化计算与存储访问的中间表示 |
 | ZeusHigh | Zeus 操作与资源组织层的中间表示 |
@@ -272,123 +295,61 @@ Table: 硬件与编译术语
 
 DT、外部搬运与 L2 Buffer 是不同概念。L2 Buffer 不等同于 PE 内部的 AL1、OL1；物理实现中的 SRAM 也不都属于程序可用的工作存储。阅读性能图时，应使用实际 trace 中的单元与命令名称，不能把所有数据移动都笼统归为 DT。硬件资源关系见[Zeus 硬件与近存架构](#hardware-model)。
 
-## D 版本记录与示例索引 {#versions-and-examples .unnumbered}
+## D 示例、验证与版本记录 {#versions-and-examples .unnumbered}
 
-### D.1 文档版本 {.unnumbered}
+### D.1 示例索引 {#example-index .unnumbered}
+
+从 [PDF 附件](#example-download)取得同版源码。各文件位于 `examples/`。默认命令的范围与设备分支如下。
+
+| 文件 | 开始方式 | 本版验证边界 |
+|-------------|-----------|----------|
+| `check_environment.py` | 环境探测，`--require-jit` | JIT 前置条件探测 |
+| `vector_add.py` | CPU 参考或 `--run-device` | 编译、CPU、功能仿真 |
+| `rmsnorm.py`、`fused_add_rmsnorm.py` | CPU 参考或 `--run-device` | 编译、CPU |
+| `softmax.py` | CPU 参考或 `--run-device` | 编译、CPU、功能仿真 |
+| `matmul.py` | CPU 参考或 `--run-device` | 固定形状的编译、CPU、功能仿真 |
+| `append_kcache.py`、`append_vcache.py` | Host 地址，设备 kernel 接收专用页 | 编译、Host、功能仿真 |
+| `ldg_layout.py` | Host 坐标和布局检查 | Host |
+| `quantized_matmul.py` | CPU 参考、`--write-slot` 生成相邻 scale 槽位 | 编译、CPU、定长 pack、功能仿真 |
+| `paged_attention_reference.py` | Host 页表、partial 和 LSE 参考 | CPU |
+| `graph_vector_add.py` | SDK 捕获、两组输入重放 | 宿主接口核查 |
+
+Table: 随书示例的入口与证据
+
+### D.2 验证范围 {#verification-scope .unnumbered}
+
+验证记录的输入包括示例文件、常量、形状、工具链及离线产物身份。测试层级决定它回答什么问题。
+
+| 执行层级 | 记录的结论 |
+|---|---|
+| 编译 | 指定源码、分块和类型能生成设备程序 |
+| CPU 或 Host | 数学参考、地址计算或物理 pack 的检查结果 |
+| Python 功能仿真 | 测试框架用指定的预编译产物执行并对拍 |
+| SDK 运行 | 由客户环境记录 JIT、AOT 或 Graph 入口、后端、设备与验收输出 |
+
+Table: 本指南的验证层级
+
+本版通过 8 项离线编译、15 项 CPU 数学参考、11 项 Host 布局检查和 16 项 Python 功能仿真。功能仿真覆盖向量加法、BF16 和量化 Matmul、专用 K/V 追加与 Softmax。向量加法覆盖 2048、2500 与 1025。在客户环境中实施 Stream、Graph、AOT、SDK JIT 或物理设备用例时，应保存对应执行记录。环境与输出记录方式见[快速上手](#setup-environment)，源码与二进制身份见仓库的 `validation-summary.json`。
+
+### D.3 文档版本 {.unnumbered}
 
 #### v0.0.6 {.unnumbered}
 
-更新日期：2026-11-25。
+更新日期为 2026-11-25。
 
-- 硬件章节：补充 GDG、LDG 的单组、单核及整设备设计容量，并区分物理容量与运行时可分配空间；GDG 与 L2 Buffer–LDG 读写采用 51.2 GB/s 口径。
-- LDG 带宽：分别说明 Zeus V3 的 15 credit / 23 拍模型和未来 Zeus V3 PRO 的两拍 miniblock 模型，移除 WL1 到 PE 端口容量叠加项。
-- LDG 布局：先给用途与布局概览，再分别介绍 Weight 与分页 KV Cache；矩阵坐标和七维变换并入 Weight，区分紧排、块间 padding 及带 UScale 的配套格式。
-- LDG 图解：新增布局分类、miniblock 与八路 WL1、三种 Weight 排列对照；以 64 KiB PATCH 和 96 KiB 槽位说明 padding 与容量。
-- Zeus 编程接口：替换通用语言 API 罗列，集中说明特殊 load/store、量化与分页参数、专用计算、执行提示和提前退出约束。
-- KV Cache 接口：明确专用 kcache/vcache 不接受 weight_dtype、ugroup、uscale 反量化参数，并与普通 Weight 形式承载 K/V 的示例分开说明。
-- 性能与实例：将自动双缓冲标为实验性、不完善、暂不推荐；说明在 kernel 中显式组织预取、双工作区及复用依赖的方法。
-- 量化与缓存：明确静态权重和 scale 在 launch 前完成布局准备、LDG 写入及同步；补充动态 KV 的 LW 布局写入与分段 ST 路径。
-- 全书版式：加入“注意、提示、注解”三类彩色框，突出 Grid、LDG 参数 ABI、数据准备和迁移约束；沿用仓库最新封面。
+- 重组 LDG 布局和 Zeus 接口，补充存储容量、连续读带宽条件及适用配置。
+- 扩展版权和责任声明，将同版示例附在 PDF 内，增加 JIT 前置检查、设备同步和验证结果的说明。
+- 六个块指针参数逐行标明。修正尾块保护区、K/V 目标和分页地址算例，并加入 partial 与 LSE 对拍。
+- 增加两组 Graph 重放、固定 BF16 Matmul 的 SDK 命令和相邻 UScale 的单槽位生成方法。
+- 解释 UScale 配对、空分片合并和 Matmul 累加依赖。目录显示前两级，PDF 书签继续覆盖细分章节。
 
-#### v0.0.5 {.unnumbered}
-
-更新日期：2026-11-25。
-
-- 封面与导航：重新设计近存计算主题封面，加入 Polar Bear Tech、公司全称、版本和日期；增加“目录”“插图目录”“表格目录”三个独立 PDF 书签。
-- 全书版式：增加目录条目间距，减淡引导点线；分别设置列表的行距和条目间距，改善附录更新记录及参考资料的阅读体验。
-- 快速上手：取消独立的边界排查小节，只保留可选的单元素尾块检查；完整排查方法统一指向调试章节。
-- 硬件章节：新增单 VP 内两组 32 lane 的对照图，分别说明宽模式和级联模式，以及 BF16、FP32 的有效元素范围。
-- LDG 章节：从数学矩阵、miniblock 切分和坐标出发重组布局说明，分开介绍 Dense/Blocked、UScale 和页表寻址；补充具体元素到物理地址的逐步推导。
-- 量化与 KV Cache 章节：补充 UScale 的 lane、页内与跨页坐标，以及 K/V 的槽位和字节偏移；区分 USaddr 系数地址与 KV 索引表。
-- 发布方式：统一提供 PDF 在线阅读与下载，网站首页直接打开 PDF；原 HTML 章节页面下线。
-
-#### v0.0.4 {.unnumbered}
-
-更新日期：2026-11-25。
-
-- 硬件、编程模型与性能章节：统一程序工作存储名称为 L2 Buffer，区分其容量预算、PE 内部缓冲和 LDG 读取量；将笼统的数据描述改为具体的访问、带宽和输入就绪条件。
-- 硬件章节：将带宽讨论合并到“Zeus V3 的算力、吞吐与带宽”，取消原有独立带宽及资源对照小节，集中说明数据方向、接口宽度与条件换算。
-- 编程模型章节：增加 GPU 与 Zeus 的 Grid 对照，区分 GPU 的 tile 实例数、Zeus 核数与核内循环的分工。
-- 快速上手与编译运行章节：补充 SDK 执行后端配置，说明 `--run-device` 经 Triton JIT 提交到所配置的后端；区分 CPU 参考、功能模拟和物理设备运行。
-- 调试与算子实例章节：以公开 JIT 入口和 PyTorch 结果比较组织操作步骤；增加 Matmul 的 LocalMem 权重准备、单核启动、同步和结果比较示例。
-- 量化与 Attention 章节：明确量化加载器的格式责任，分别计算 L2 Buffer 中间状态和 K/V 的 LDG 读取量，保留普通权重与专用缓存的布局边界。
-- 附录：展开各版本的逐章节变更，更新工具索引、示例运行方式和发行范围；明确宿主接入片段尚未覆盖的物理设备验证。
-- 全书版式：更新中英文版权声明与页脚，调整章节书签和参考资料列表间距，复核代码、公式与图表的分页。
-- 交付形式：整理公开仓库内容，增加 PDF 与在线阅读双输出，保留章节导航和示例入口。
-
-#### v0.0.3 {.unnumbered}
-
-::: {.keep}
-
-更新日期：2026-11-25。
-
-- 硬件与近存架构章节：扩充双核、每核多 VP/DT、PE 数据路径和理论吞吐换算，增加硬件总图。
-- LDG 近存编程章节：新增 Dense/Blocked 坐标解释、LocalMem 权重准备、KCache/VCache 追加和读取契约，区分普通页池与专用索引表。
-- Triton 语言与 API 章节：补充参数、返回值、类型与布局条件、常见错误及关联操作，扩展控制流和 Zeus 专用接口。
-- 编译与框架接入章节：扩充 JIT、ZECC、AOT、Stream、Graph 与资源生命周期，说明编译特化和参数 ABI。
-- 调试、性能与完整实例章节：补充工作集计算、流水依赖、独立操作并行、Softmax 有效域和 BF16 融合语义。
-- 量化与 Attention 章节：新增 INT4 配对、UScale 页、分页 KV 更新、QK/PV 布局和在线 Softmax 推导；配套增加布局检查及示例。
-
-:::
-
-#### v0.0.2 {.unnumbered}
-
-更新日期：2026-11-24。
-
-- 概述至迁移章节：形成第一份完整正文，覆盖编程模型、数据类型、访存、编译执行、调试与优化。
-- 算子实例章节：加入 BF16 向量加法、RMSNorm、Matmul 和 Fused Add RMSNorm，说明 FP32 累加与 BF16 输出转换。
-- 全书版式：加入矢量示意图、代码块、表格和交叉引用，完成初稿逐页审阅。
-
-#### v0.0.1 {.unnumbered}
-
-::: {.keep}
-
-更新日期：2026-11-24。
-
-- 全书结构：确定概述、上手、硬件、编程模型、语言、运行、调试、性能、实例、迁移与附录的大纲。
-- 版式样张：建立 A4 页面、标题层级、中文正文、代码与表格样式，确认 PDF 构建方式。
-:::
-
-本版面向 Zeus V3 单设备算子开发。安装时使用 SDK 发行说明列出的配套 Triton、PyTorch 后端、编译器和运行时；接口支持范围同时受 dtype、shape、布局及目标配置约束。正文中的带宽与算力换算都附有时钟和数据类型等条件，理论值不代表应用实测性能。
-
-### D.2 示例索引 {.unnumbered}
-
-| 示例文件 | 主要内容 | 对应章节 |
-|---|---|---|
-| `examples/check_environment.py` | 检查 Python、工具与可选运行时 | 快速上手 |
-| `examples/vector_add.py` | BF16 加法、尾块与核内循环 | 上手、模型、编译与调优 |
-| `examples/rmsnorm.py` | 行归约、FP32 统计与缩放 | 算子开发实例 |
-| `examples/matmul.py` | M/N/K 分块与 `tl.dot` | 算子开发实例 |
-| `examples/fused_add_rmsnorm.py` | 残差加法与归一化融合 | 算子开发实例 |
-| `examples/append_kcache.py` | 单 token 的 KCache 页写入 | LDG 与 KV cache |
-| `examples/append_vcache.py` | 单 token 的 VCache 页写入 | LDG 与 KV cache |
-| `examples/ldg_layout.py` | 完整矩阵的 LDG 地址映射验证 | LDG 与 KV cache |
-| `examples/softmax.py` | 固定行块的 FP32 Softmax | 算子开发实例 |
-| `examples/quantized_matmul.py` | FP8 × INT4、BF16 UScale、FP32 输出 | 量化矩阵乘与 UScale |
-
-Table: 随书示例
-
-运行示例前先阅读其输入契约。向量加法、RMSNorm、Softmax 和融合模块提供 `--run-device`，经配套运行时执行并与 PyTorch 参考比较；省略该参数只计算 CPU 参考。Matmul 的 Host 接入在正文单独给出。量化与 KV 追加模块需要符合各自格式的 LDG 分配和宿主参数，不能向这些模块添加不存在的命令行选项。布局检查只验证坐标与地址公式，不执行设备 kernel。
-
-修改案例时，从最小的整块输入开始，再覆盖尾块、多块、动态形状和算法专有边界。保留原始参考函数，使优化前后的实现能够使用同一输入进行比较。
-
-### D.3 验证结果的阅读方式 {.unnumbered}
-
-源码与命令检查用于确认接口存在、参数规则和调用关系；编译结果用于确认一组具体源码、类型、常量和工具链能够产生设备程序；CPU 参考用于确认数学定义或地址公式；功能仿真用于检查指定配置下的结果；硬件运行与性能测量还需要对应设备、SDK 和实际执行记录。这些结果分别回答不同的问题，不相互替代。
-
-手册的 API 条目描述调用契约，不把某个单点结果扩大为全部 dtype、shape 和布局的笛卡尔积。特别是本书的 Matmul、Softmax 和 KV cache 示例，均在正文中给出具体布局与输入条件。对新组合，应沿用现有参考方法加入新样例，而不只检查编译是否成功。
-
-v0.0.3 随书示例已完成 8 个完整 kernel 的编译、15 组 CPU 数学参考、11 组宿主布局检查与 16 组功能仿真。布局检查覆盖完整矩阵地址映射和 KV 追加边界；功能仿真覆盖向量、BF16/量化矩阵乘、KV 追加和 Softmax，后者另含非整块宽度下的极端有限输入。另检查向量加法宿主参数在 i32 溢出边界处的拒绝行为。
-
-v0.0.5 扩展了宿主布局检查，逐坐标核对 Dense、Blocked、UScale 及专用 K/V 页，覆盖 731666 个元素位置和 16 个索引副本，并与配套 pack 实现做对照。该检查只在 Host 上执行，不调用设备 kernel；历史编译和仿真记录仍保留原被测源码身份。
-
-这些记录限定于相应的类型、shape、布局和输入条件。RMSNorm 与融合归一化完成编译及 CPU 参考；Stream、Graph、AOT 和 Matmul 宿主接入片段完成接口核查。本版没有新增通过 JIT 路径执行的验证记录；随书检查未包含物理设备执行、整模型回归或硬件性能测量。
+早期版本的更改记录见[仓库版本历史](https://github.com/Xuanwen-Wang/triton-zeus-programming-guide/blob/main/CHANGELOG.md)。既有执行证据保留各自的源码和工具链身份。
 
 ### D.4 参考资料 {.unnumbered}
 
 本指南的章节组织与手册体例参考以下资料，技术接口以 Zeus 配套实现与实际验证为准。
 
-1. 《Cambricon BANG C/C++ 编程指南》v1.9.0。用于参考硬件与编程模型的讲解顺序、性能分析到优化案例的组织方式，以及 A4 技术手册版式。
+1. 《Cambricon BANG C/C++ 编程指南》v1.9.0。用于参考版权声明与章节的组织、性能分析到优化案例的讲解方式，以及 A4 技术手册版式。
 2. [《TritonGCU 编程指南》EFC3072，TopsRider 3.8 Update 1](https://support.enflame-tech.com/onlinedoc_dev_3.8/4-develop/triton_gcu_programming_guide/content/source/index.html)。用于参考执行模型、类型接口、调试、限制和迁移章节的划分。
 3. Zeus 配套编译器的架构、ZECC、Executor 使用说明及随版本交付的算例。用于核对本书中的具体入口、参数和平台行为。
 

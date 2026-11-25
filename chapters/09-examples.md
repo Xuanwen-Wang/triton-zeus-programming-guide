@@ -344,39 +344,15 @@ CPU 参考使用已经转换为 BF16 的 A、W，提升到 FP32 做矩阵乘，�
 python examples/matmul.py --m 256 --n 256 --k 384
 ```
 
-这个模块的命令行只计算 CPU 参考，没有 `--run-device` 参数。下面的 SDK 宿主示例展示完整调用：将两段代码顺序保存为脚本，从随书根目录运行。先建立 BF16 输入，再按本核的普通 weight 格式准备 W；其中 `packed` 是拥有存储的 LocalMem 对象。
+在满足 [JIT 前置条件](#setup-environment)的 SDK 中，使用随书脚本验证固定形状。
 
-```python
-import torch
-import torch_zeus
-from examples.matmul import matmul_bf16, constants, reference
-
-m, n, k = 256, 256, 384
-gen = torch.Generator().manual_seed(20261124)
-a_host = torch.randn(m, k, generator=gen).to(torch.bfloat16)
-w_host = torch.randn(n, k, generator=gen).to(torch.bfloat16)
-a = a_host.to("zeus:0")
-out = torch.empty((m, n), dtype=torch.bfloat16, device="zeus:0")
-packed = torch.zeus.local_memory.from_tensor(
-    w_host, kind="weight", Tr=1, Tc=1, core_id=0,
-)
+```bash
+ZECC_KERNEL_MODE=jit python examples/matmul.py --run-device
 ```
 
-```python
-matmul_bf16[(1,)](
-    a, packed, out, m, k, n,
-    **constants, zeus_enable_jit=True,
-)
-torch.zeus.synchronize(0)
-actual = out.cpu()
-expected = reference(a_host, w_host)
-torch.testing.assert_close(
-    actual, expected, rtol=1e-2, atol=1e-2,
-)
-print("max_abs_error=", (actual.float() - expected.float()).abs().max())
-```
+脚本按普通 Weight 格式把 W 放入核 0 的 LocalMem。启动 grid 和 `CORE_NUM` 均为 1，A、权重 owner 和输出存活到目标设备同步完成。CPU 参考用同样的 BF16 输入计算并转换输出。对拍使用本例的初始容差 `rtol=1e-2, atol=1e-2`，并报告最大绝对误差。其他业务输入按其误差预算验证。
 
-启动 grid 和 `constants["CORE_NUM"]` 都为 1；`packed`、A 与输出必须保持有效直到执行完成。参考直接使用同一份 BF16 输入，执行 FP32 矩阵乘后转换为 BF16。上述容差是有限随机输入的初始检查条件，不保证任意数据范围都满足；业务接入应按误差预算固定阈值，并保留最坏误差位置。若要求按位一致，还需对齐 dot 与归约顺序。该宿主封装的接口与布局已核对，随书检查不包含它在物理设备上的执行结果。
+本形状的随书测试使用预编译设备程序进行功能仿真。客户 SDK 包中的宿主 JIT 调用应另外保存实际运行结果。
 
 ### 优化顺序
 

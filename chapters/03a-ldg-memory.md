@@ -17,7 +17,8 @@ Weight 主要采用三种块组织：Dense 对完整矩阵统一排列；Blocked
 | Weight：Dense | 整个矩阵统一 pack，miniblock 连续排列 | 完整矩阵形状与 tile 起点 |
 | Weight：Blocked 紧排 | 独立块分别 pack，块间紧密相接 | 块形状、遍历顺序与块基址 |
 | Weight：Blocked 带 padding | packed block 放入带空隙的对齐空间 | 有效载荷、槽位容量与地址步长 |
-| KV Cache：离散分页 | 索引定位 payload 页，页内按 K/V 布局排列 | 页映射、页长与有效 token 范围 |
+| KV Cache：软件分页 | 普通 Weight 组织 K 行与 V 列，上层页表定位 slot | 完整池形状、页表和有效 token 范围 |
+| KV Cache：专用分页 | 专用索引定位 payload 页，页内采用配套 K/V 布局 | 专用页长、索引编码与 K/V 格式 |
 
 Table: LDG 数据用途与布局选择
 
@@ -136,7 +137,7 @@ $$
 
 Table: B[128,256] 的四个 BF16 miniblock
 
-![从数学 B[K,N] 到存储 W[N,K]：四个 miniblock 的覆盖范围与物理顺序](assets/ldg-v005-miniblocks.svg){width=100%}
+![从数学 B[K,N] 到存储 W[N,K]：四个 miniblock 的覆盖范围与物理顺序](assets/ldg-v005-miniblocks.svg){width=100% alt="权重转为 W 的输出通道行、收缩维列。先沿同一行块的两个 K 列块排列，再进入下一行块。每块占 16 KiB。"}
 
 在 B 图中按行从左到右看，块号是 0、2、1、3；字节流却按 0、1、2、3 排列。转为 W 视图后，Dense 的 miniblock 按块行优先存放，再结合前述八路片段规则即可定位到具体元素。
 
@@ -266,7 +267,7 @@ Blocked 的当前块基址为 `base + block_id * 65536` 字节，块内 shape �
 
 沿用前一小节的两个独立 W[256,128] 块，每块的 packed 载荷为 64 KiB。若每个块放入一个 96 KiB 槽位，则前 64 KiB 保存矩阵字节，后 32 KiB 留作 padding。第二个块从 96 KiB 开始，两个槽位共占 192 KiB；矩阵有效载荷仍为 128 KiB。
 
-![同一矩阵的 Dense、Blocked 紧排与 96 KiB 槽位 padding 对照](assets/ldg-blocked-padding.svg){width=100%}
+![同一矩阵的 Dense、Blocked 紧排与 96 KiB 槽位 padding 对照](assets/ldg-blocked-padding.svg){width=100% alt="Dense 先沿矩阵行块内的列块排列。Blocked 将独立 PATCH 连续排列，每块 64 KiB。96 KiB 槽位在块后预留 32 KiB。"}
 
 | 项目 | Blocked 紧排 | 本例带 padding |
 |---|---:|---:|
@@ -487,7 +488,7 @@ Table: 逻辑页顺序与实际 payload 顺序分离的例子
 
 此时索引条目 0 填 18，条目 1 填 2，并各写入八个副本。读取全局 token 1025 时，逻辑页号为 $1025//1024=1$，页内位置为 1；索引解析得到 payload 起点 $2\times16384=32768$。维度 0 在 K 页内的偏移为 128 字节，因此最终地址为 32896。
 
-![两个专用 K 页的乱序放置：从 token 1025 经索引到 payload 字节 32896](assets/ldg-v005-index-pages.svg){width=100%}
+![两个专用 K 页的乱序放置：从 token 1025 经索引到 payload 字节 32896](assets/ldg-v005-index-pages.svg){width=100% alt="token 1025 落在逻辑页 1 的第 1 行。索引编码 2 定位本核 LDG 基址加 32768 B，再加页内 128 B 得 32896 B。"}
 
 这条地址链与 UScale 地址不同。这里先用逻辑页号查表，再在 payload 内做矩阵布局寻址；`USaddr` 直接给出 scale 第一页的起点，没有上述逻辑页到 payload 页的查表过程。二者都使用 16 KiB 地址单位，不能据此将两种资源或表内容互换。
 
@@ -504,9 +505,11 @@ QK 计算为 $Q[M,D]K[S,D]^T$，输出 $[M,S]$。在本例中 D 为 128，S 的�
 ```python
 k_desc = tl.make_block_ptr(
     base=k_index_base,
-    shape=(1024, 128), strides=(128, 1),
+    shape=(1024, 128),
+    strides=(128, 1),
     offsets=(seq_start, 0),
-    block_shape=(128, 128), order=(1, 0),
+    block_shape=(128, 128),
+    order=(1, 0),
 )
 k_tile = tl.load(
     k_desc, memory_type="kcache", page_size=1024,
@@ -523,6 +526,8 @@ scores = tl.dot(q_tile, tl.trans(k_tile))
 
 QK 的未生效位置必须被注意力 mask 排除。仅把 K 的无效位置补零，会得到零分数；如果有效分数为负，零分数仍可能在 softmax 中获得概率。应按所用数值路径建立有效长度与因果 mask，PV 再只消费被允许的位置。关于稳定 softmax 与在线累加，参见注意力实例。
 
+::: {.keep}
+
 #### PV 的矩阵方向
 
 PV 计算为 $P[M,S]V[S,D]$，输出 $[M,D]$。PE 的右操作数统一按 $[N,K]$ 理解，所以此时 N 为 D、K 为 S，描述符逻辑形状是 $[128,1024]$：
@@ -530,9 +535,11 @@ PV 计算为 $P[M,S]V[S,D]$，输出 $[M,D]$。PE 的右操作数统一按 $[N,K
 ```python
 v_desc = tl.make_block_ptr(
     base=v_index_base,
-    shape=(128, 1024), strides=(1024, 1),
+    shape=(128, 1024),
+    strides=(1024, 1),
     offsets=(0, seq_start),
-    block_shape=(128, 128), order=(1, 0),
+    block_shape=(128, 128),
+    order=(1, 0),
 )
 v_nk = tl.load(
     v_desc, memory_type="vcache", page_size=1024,
@@ -540,6 +547,8 @@ v_nk = tl.load(
 )
 partial = tl.dot(p_tile, tl.trans(v_nk))
 ```
+
+:::
 
 写 V 时以 `[token,dim]` 描述新 token，读 PV 时以 `[dim,token]` 描述 PE 的右操作数，这两种视图由专用 V 布局连接。不能仅凭两个维度都等于 128 的小例子判断方向正确；验证时应让序列长度与头维度不同，并采用位置相关数据。
 
@@ -603,9 +612,11 @@ ldg_base = ldg_address.to(tl.pointer_type(tl.bfloat16))
 
 如果核 0 保存 W 的前半行、核 1 保存后半行，kernel 必须同时使用各核的基址和各自的逻辑 shape。只把 `CORE_NUM` 从 1 改成 2，却继续按完整 W 的 shape 解释半份数据，会越界或读取错误行。分片方案、每核地址表和输出分区应一起定义。
 
-#### 逻辑描述符的四项信息
+::: {.keep}
 
-普通矩阵读取可用四项信息理解：基址、完整逻辑 shape、当前 tile shape、tile 的逻辑起点。以下片段描述 LDG 矩阵 W 的一个块：
+#### 逻辑描述符的六个参数
+
+用 `base`、`shape`、`strides` 和 `order` 描述逻辑矩阵 W，再用 `offsets` 和 `block_shape` 选出当前 tile。
 
 ```python
 b_desc = tl.make_block_ptr(
@@ -621,6 +632,8 @@ b_nk = tl.load(
     boundary_check=(0, 1), padding_option="zero",
 )
 ```
+
+:::
 
 当这个读取被 PE 矩阵运算消费时，编译器据此建立 LDG 操作数描述符。这里的 `strides=(K,1)` 描述原逻辑矩阵；它不是声明物理 LDG 字节已经按普通行优先排列。物理排列由 pack 契约解释。
 
@@ -650,14 +663,20 @@ PE 矩阵读取与原始字节访问具有不同的并行度，不能套用同�
 
 ```python
 src = tl.make_block_ptr(
-    base=src_ptr, shape=(128, 128), strides=(128, 1),
-    offsets=(0, 0), block_shape=(128, 128),
+    base=src_ptr,
+    shape=(128, 128),
+    strides=(128, 1),
+    offsets=(0, 0),
+    block_shape=(128, 128),
     order=(1, 0),
 )
 values = tl.load(src)
 dst = tl.make_block_ptr(
-    base=ldg_base, shape=(128, 128), strides=(128, 1),
-    offsets=(0, 0), block_shape=(128, 128),
+    base=ldg_base,
+    shape=(128, 128),
+    strides=(128, 1),
+    offsets=(0, 0),
+    block_shape=(128, 128),
     order=(1, 0),
 )
 tl.store(
@@ -696,17 +715,19 @@ Table: 根据源格式选择装载或写入方式
 
 新 token 是连续 128 个 BF16 值，共 256 字节。Host 或上游阶段需先确定当前请求、头、物理页、页内 token 位置，并保证目标页仍由该请求拥有。下面两个核心片段来自同一种接口契约：页长为 1024、头维度为 128、单核，且 $0\le\text{token_offset}<1024$。
 
-首先取得 payload 基址并读取新 token：
+先从每核 K 页地址表取得已解析的 K payload 基址，再读取新 token 的 K 向量。
 
 ```python
 core_id = tl.program_id(0)
-address = tl.load(cache_page_ptr_list + core_id)
-page_base = address.to(tl.pointer_type(tl.bfloat16))
+k_address = tl.load(k_page_ptr_list + core_id)
+k_page_base = k_address.to(tl.pointer_type(tl.bfloat16))
 
 src = tl.make_block_ptr(
     base=new_token_ptr,
-    shape=(1, 128), strides=(128, 1),
-    offsets=(0, 0), block_shape=(1, 128),
+    shape=(1, 128),
+    strides=(128, 1),
+    offsets=(0, 0),
+    block_shape=(1, 128),
     order=(1, 0),
 )
 token = tl.load(src)
@@ -721,14 +742,16 @@ token = tl.load(src)
 K 的逻辑页表示为 $[1024,128]$，行是 token，列是 head dimension。目的块只覆盖当前 token 的一行：
 
 ```python
-dst = tl.make_block_ptr(
-    base=page_base,
-    shape=(1024, 128), strides=(128, 1),
+k_dst = tl.make_block_ptr(
+    base=k_page_base,
+    shape=(1024, 128),
+    strides=(128, 1),
     offsets=(token_offset, 0),
-    block_shape=(1, 128), order=(1, 0),
+    block_shape=(1, 128),
+    order=(1, 0),
 )
 tl.store(
-    dst, token,
+    k_dst, token,
     memory_type="kcache", store_mode="lw",
     blocksize=1024,
 )
@@ -740,17 +763,27 @@ LW 使用 K payload 所需的普通排列，不进行索引表查找。源码中
 
 #### 写入 V payload
 
-V 的输入同样是 $[1,128]$，目的逻辑页同样按 token 行描述，但使用不同布局：
+追加 V 时，按相同的 `src` 模板从 `new_token_ptr` 读取新 token 的 V 向量。用 V 的每核页地址表建立写入描述符，逻辑页仍按 token 行描述。
 
 ```python
+v_address = tl.load(v_page_ptr_list + core_id)
+v_page_base = v_address.to(tl.pointer_type(tl.bfloat16))
+v_dst = tl.make_block_ptr(
+    base=v_page_base,
+    shape=(1024, 128),
+    strides=(128, 1),
+    offsets=(token_offset, 0),
+    block_shape=(1, 128),
+    order=(1, 0),
+)
 tl.store(
-    dst, token,
+    v_dst, token,
     memory_type="vcache", store_mode="lw",
     blocksize=1024,
 )
 ```
 
-这里的 `dst` 应指向独立的 V payload 页，并携带与 K 示例相同的逻辑 shape 和页内行位置。V 模式选择 K/C 交换的物理组织，kernel 不需要先做一次软件转置。若先把 token 转成另一种布局，再要求 LW 做同样转换，会改变写入结果。
+两张页地址表分别来自已解析的 K 和 V payload。写入 V 时直接传入 token-major 输入，由 LW 完成 K/C 交换的物理排列。
 
 读写模式也不能混同：专用 PE 读取需要索引寻址，直接 LW 写入已经解析了 payload。V 的读侧模式包含“布局交换”和“索引查找”两项语义，直接写入只需要前者。算子代码使用上面的接口，具体位域由编译器设置。
 
@@ -767,7 +800,7 @@ Table: 相对于各自 payload 页基址的写入偏移
 
 这些偏移来自固定的 BF16 页布局，不适用于其他 dtype、头维度或不同页面组织。它们说明：相同的逻辑一行，在 K/V 物理页里具有不同分散方式。直接逐字节覆盖一个连续的 256 字节区域不能同时实现这两个追加操作。
 
-![专用 K/V 物理页中 token 1000 的写入位置与字节段](assets/kv-cache-update.svg){width=100%}
+![专用 K/V 物理页中 token 1000 的写入位置与字节段](assets/kv-cache-update.svg){width=100% alt="一次追加每页只写 256 B。K 页写两个 128 B 段，V 页以 2048 B 为间隔写八个 32 B 段。其余 token 保持原值。"}
 
 #### 追加正确性要检查整页
 
@@ -806,7 +839,7 @@ LW 已提交不等于 LDG 内容已经更新。读取新状态的 PE 操作必�
 
 #### 多个 kernel 与多条流
 
-基础闭环可以先使用明确的完成边界：运行写入任务，用 `torch.zeus.synchronize()` 等待完成，再运行消费任务。验证该顺序后，再缩小等待范围，用同一流顺序或流间等待建立所需依赖。不同流上按 Python 先后调用的操作，不应仅凭调用顺序假定数据可见。流与等待接口的完整用法见[编译、执行与框架接入](#compile-and-run)。
+基础闭环先运行写入任务，用 `torch.zeus.synchronize(device)` 等待目标设备完成，再运行消费任务。缩小等待范围时，可用同一流顺序或流间等待建立依赖。用法见[Stream 与 Graph](#streams-and-graph)。
 
 输入、输出、LocalMem 对象和索引表必须存活到设备最后一次访问结束。异步提交后立刻释放 owner，或把页交给其他请求覆盖，都可能使仍在运行的消费者读到另一请求的数据。完成等待保证设备工作结束；若宿主封装另行缓存了 LDG 的线性视图，还需使对应缓存失效，再读取更新后的内容。
 

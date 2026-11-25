@@ -329,7 +329,7 @@ def blocked_padding():
     ticks(492, (0, 64, 128))
     d.text(684, 469, "总计 128 KiB", 23, NAVY, 600)
 
-    d.text(20, 640, "aligned_size = 96", 18, MUTED)
+    d.text(20, 640, "aligned_size = 96 KiB", 18, MUTED)
     payload(550, 0, "AC")
     payload(550, 96, "BD")
     for offset in (64, 160):

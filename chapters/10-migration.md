@@ -55,7 +55,16 @@ Table: 保留语义、重写映射与重新调优
 
 ### 先迁移单核向量加法
 
-常见 GPU 写法让每个 program 负责一个 tile，启动 grid 为 `ceil(N/BLOCK)`。核心地址计算如下。
+下面对照同一输入 `N=2500,BLOCK=1024`。两个实现都处理三个 tile，最后一个 tile 有 452 个有效元素。
+
+| 入口 | 启动 | 处理范围 |
+|---|---|---|
+| GPU Triton | `grid=(3,)` | 每个 program 处理一个 tile |
+| Zeus 单核 | `grid=(1,)` | 核 0 依次处理三个 tile |
+
+Table: 同一向量输入的 GPU 与 Zeus 启动
+
+常见 GPU 写法用 `tl.program_id(0)` 得到 tile 号。
 
 ```python
 tile = tl.program_id(0)
@@ -76,8 +85,12 @@ Zeus 启动适配将 `grid[0]` 用作参与核数，不会把 `ceil(N/BLOCK)` �
 
 ```python
 template = tl.make_block_ptr(
-    base=x_ptr, shape=(N,), strides=(1,), offsets=(0,),
-    block_shape=(BLOCK,), order=(0,),
+    base=x_ptr,
+    shape=(N,),
+    strides=(1,),
+    offsets=(0,),
+    block_shape=(BLOCK,),
+    order=(0,),
 )
 for tile in range(tl.cdiv(N, BLOCK)):
     block_ptr = tl.advance(template, (tile * BLOCK,))
@@ -85,7 +98,7 @@ for tile in range(tl.cdiv(N, BLOCK)):
                 padding_option="zero")
 ```
 
-这段片段只展示 X 的读取；完整向量加法同时建立 X、Z、Y 的块指针，并使用[第一个向量加法](#vector-add)的 FP32 计算与 BF16 输出。先在 `N=1`、`1024`、`1025`、`2500` 上验证单核路径。每个输出元素应恰好写一次，空输入由宿主封装直接返回。
+完整程序同时创建 X、Z、Y 的块指针。对相同形状的 Zeus 张量 `x`、`z`，使用随书 `vector_add.launch(x, z, block=1024, cores=1)`。先验证 `N=1`、`1024`、`1025`、`2500` 的单核路径，每个有效输出应恰好写一次。
 
 ### 再引入双核任务分配
 
@@ -113,8 +126,12 @@ GPU 代码常用 grid 数量刚好覆盖有效 tile；Zeus 的固定核数入口
 
 ```python
 a_block = tl.make_block_ptr(
-    base=a_ptr, shape=(M, K), strides=(K, 1),
-    offsets=(0, 0), block_shape=(B_M, B_K), order=(1, 0),
+    base=a_ptr,
+    shape=(M, K),
+    strides=(K, 1),
+    offsets=(0, 0),
+    block_shape=(B_M, B_K),
+    order=(1, 0),
 )
 a = tl.load(tl.advance(a_block, (m0, k0)),
             boundary_check=(0, 1), padding_option="zero")

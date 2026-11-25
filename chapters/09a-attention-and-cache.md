@@ -34,7 +34,7 @@ $$
 
 ### 三个量分别承担什么职责
 
-设页长 P=256，池中有四个物理页，因此每个 KV head 可容纳 `R=4*256=1024` 个 token slot。请求使用的页表为 `[3,1]`：逻辑页 0 存放于物理页 3，逻辑页 1 存放于物理页 1。页表元素是页号，不是字节地址，也不是 LDG 基址。
+设页长 P=256，池中有四个物理页，因此每个 KV head 可容纳 `R=4*256=1024` 个 token slot。页表 `[3,2]` 将逻辑页 0、1 依次映射到物理页 3、2。页表的单位是物理页号。
 
 这里的“页”是缓存管理的一组 P 个 token slot，与 LDG 的 16 KiB miniblock 不同。地址转换分两步：先由请求页表得到池中的 slot，再按 K/V 矩阵布局把 `(slot,d)` 转成字节位置。尤其是 V，一个 token 页在 LDG 中可能跨多个行块；页号不表示一段可以按普通行主序读取的连续字节。
 
@@ -56,14 +56,14 @@ $$
 |---:|---:|---:|---:|---:|
 | 0 | 0 | 3 | 0 | 768 |
 | 255 | 0 | 3 | 255 | 1023 |
-| 256 | 1 | 1 | 0 | 256 |
-| 389 | 1 | 1 | 133 | 389 |
+| 256 | 1 | 2 | 0 | 512 |
+| 389 | 1 | 2 | 133 | 645 |
 
-Table: 页表 `[3,1]` 下的 token 地址转换
+Table: 页表 `[3,2]` 下的 token 地址转换
 
-![逻辑序列通过页表访问不连续的物理页](assets/paged-attention.svg){width=100%}
+![逻辑序列通过页表按请求顺序访问物理页](assets/paged-attention.svg){width=100% alt="逻辑页 0 指向物理页 3，读 slot 768 到 1023。逻辑页 1 指向物理页 2，读 512 到 645。新增 token 389 写 slot 645。"}
 
-最后一行的逻辑位置和物理 slot 恰好相等，只是这组页表的巧合。不能据此省略页表。第 0 个 token 对应 slot 768，已足以发现把逻辑位置直接当作物理位置的错误。
+新增 token 389 写入 slot 645。对拍时同时检查 slot 645 得到新值、slot 389 保持旧值，即可检出直接用逻辑位置写入的错误。
 
 `slot_idx[B]` 告诉更新 kernel 把本次 token 写到哪里；`block_table[B,max_pages]` 告诉读取 kernel 按什么顺序找到历史数据；`seq_lens[B]` 告诉读取 kernel 有多少 token 参与计算。三个张量应属于同一次调度结果。仅更新 slot、不更新页表或长度，会让写入与读取指向不同的序列。
 
@@ -71,7 +71,7 @@ Table: 页表 `[3,1]` 下的 token 地址转换
 
 读取 kernel 使用 `BLOCK_S=256`，要求页长是该块宽的整数倍。第 s 块的逻辑起点为 `g0=s*BLOCK_S`，先查询 `g0//P` 对应的物理页，再从 `physical_page*P + g0%P` 开始读一个规则块。由于块不跨页，一次页表查询就足够。
 
-若把 `BLOCK_S` 改为 384 而页长仍为 256，第一块会跨越逻辑页 0 和 1；这两页分别位于物理页 3 和 1，地址并不连续。仅根据第一个页号连续读取 384 个 token 会读错后半段。应保持整除约束，或重新设计能分段读取跨页数据的算法。
+若把 `BLOCK_S` 改为 384 而页长仍为 256，第一块会跨越逻辑页 0 和 1。按页表应先读物理页 3，再回到物理页 2。整块读取要求分块宽度是页长的约数，其他分块应按页边界拆开。
 
 本例 `S=390` 时共两块，第一块 256 个 token 全部有效，第二块只有 134 个有效 token。物理池中其余 slot 可能保存别的请求或旧数据。尾部 mask 必须根据逻辑有效长度计算，而不能依据池容量判断所有已分配 slot 都有效。
 
@@ -114,9 +114,9 @@ $$
 
 该公式只用于本章普通 BF16 weight、`Tr=Tc=1` 的布局。更改 dtype、patch 几何或缓存种类后，应重新使用对应格式公式。
 
-写入物理 slot 389 时，K 的行块为 3、块内行为 5。D=256 分成四个 64 元素行段，因此 K 写入物理块 12、13、14、15 的第 5 行。它们不是四段首尾相接的普通连续数组，中间相隔一个物理块。
+写入物理 slot 645 时，K 的行块为 5、块内行为 5。D=256 分成四个 64 元素行段，分别写入物理块 20–23 的第 5 行。
 
-V 的逻辑形状是 `[256,1024]`。slot 389 位于列块 6、块内列 5，D 方向有两个 128 行块，因此 V 写入物理块 6 和 22 的第 5 列。两个列段分别保存 `d=0..127` 和 `d=128..255`。
+V 的逻辑形状是 `[256,1024]`。slot 645 位于列块 10、块内列 5。D 方向的两个 128 行块分别写入物理块 10 和 26 的第 5 列，保存 `d=0..127` 和 `d=128..255`。
 
 ![同一个 token 的 K 行段与 V 列段写入坐标](assets/attention-slots.svg){width=100%}
 
@@ -124,12 +124,12 @@ V 的逻辑形状是 `[256,1024]`。slot 389 位于列块 6、块内列 5，D �
 
 | 输入元素 | 池内逻辑坐标 | 物理块 / 块内坐标 | 字节偏移 |
 |---|---|---|---:|
-| K 的 d=130 | `(389,130)` | 14 / `(5,2)` | 230020 |
-| V 的 d=130 | `(130,389)` | 22 / `(2,5)` | 360714 |
+| K 的 d=130 | `(645,130)` | 22 / `(5,2)` | 361092 |
+| V 的 d=130 | `(130,645)` | 26 / `(2,5)` | 426250 |
 
-Table: slot 389 的两个缓存目标
+Table: slot 645 的两个缓存目标
 
-例如 K 的偏移为 $14\times16384+5\times128+2\times2$；V 为 $22\times16384+2\times128+5\times2$。两者从同样长度的输入向量出发，目标块、块内方向和字节位置都不同。
+K 偏移为 $22\times16384+5\times128+2\times2$，V 偏移为 $26\times16384+2\times128+5\times2$。
 
 只看 `D=256` 个 BF16 值，K 和 V 的输入大小相同；看物理目标时，K 是四个连续行段，V 是两个带跨度的列段。把 K 的写入方法复制给 V，会把同一份值写到错误坐标，即使没有越过池的总范围也会破坏缓存。
 
@@ -137,7 +137,7 @@ Table: slot 389 的两个缓存目标
 
 读取时，weight 路径使用完整逻辑矩阵描述符。K 的 shape 始终是 `(R,D)`，V 始终是 `(D,R)`；当前请求长度 S 只决定循环次数和尾部有效域。若把 V 的 shape 改成 `(D,S)`，列块数可能改变，后续行块的地址也随之改变。
 
-本例 V 的完整列数是 1024，每个行块对应 16 个列块。若误用有效长度 390，就只剩 $\lceil390/64\rceil=7$ 个列块；上表中的 `(130,389)` 会被解释成物理块 13、偏移 213258 B，而正确位置是物理块 22。这个错误可能仍在池内，却读到了另一处数据。因此，池容量决定布局，序列长度决定有效域。
+本例 V 的完整列数是 1024，每行块对应 16 个列块。若误用有效长度 390，每行块的步长会按 7 个列块计算，并将合法 slot 645 排除。读取描述符按池容量构建，注意力 mask 按请求有效长度构建。
 
 更新 kernel 则把池描述为物理 `[num_blocks,128,64]` 数组。K 每次写一个 `[1,1,64]` 行段，V 每次写一个 `[1,128,1]` 列段。所有偏移通过描述符的 `tl.advance` 表达，保持池基址不变。这一写法与直接对 weight base 做普通线性指针算术不同，应沿用配套路径的实现方式。
 
@@ -147,8 +147,10 @@ Table: slot 389 的两个缓存目标
 k_target = tl.make_block_ptr(
     base=k_pool,
     shape=(pool_row_blocks * CB_K, 128, 64),
-    strides=(8192, 64, 1), offsets=(0, 0, 0),
-    block_shape=(1, 1, 64), order=(2, 1, 0),
+    strides=(8192, 64, 1),
+    offsets=(0, 0, 0),
+    block_shape=(1, 1, 64),
+    order=(2, 1, 0),
 )
 block = (slot // 128) * CB_K + column_block
 position = (block, slot % 128, 0)
@@ -162,8 +164,10 @@ V 的目标使用 `pool_col_blocks=R//64`；`row_block` 沿 D 的 128 行块递�
 v_target = tl.make_block_ptr(
     base=v_pool,
     shape=((D // 128) * pool_col_blocks, 128, 64),
-    strides=(8192, 64, 1), offsets=(0, 0, 0),
-    block_shape=(1, 128, 1), order=(2, 1, 0),
+    strides=(8192, 64, 1),
+    offsets=(0, 0, 0),
+    block_shape=(1, 128, 1),
+    order=(2, 1, 0),
 )
 block = row_block * pool_col_blocks + slot // 64
 position = (block, 0, slot % 64)
@@ -218,13 +222,13 @@ q = q_host.to("zeus")
 ```python
 k_new_host = torch.randn(1, 2, 256).to(torch.bfloat16)
 v_new_host = torch.randn(1, 2, 256).to(torch.bfloat16)
-slot = torch.tensor([389], dtype=torch.int32, device="zeus")
-table = torch.tensor([[3, 1]], dtype=torch.int32,
-                     device="zeus")
+slot = torch.tensor([645], dtype=torch.int32, device=q.device)
+table = torch.tensor([[3, 2]], dtype=torch.int32,
+                     device=q.device)
 lengths = torch.tensor([390], dtype=torch.int32,
-                       device="zeus")
-k_new = k_new_host.to("zeus")
-v_new = v_new_host.to("zeus")
+                       device=q.device)
+k_new = k_new_host.to(q.device)
+v_new = v_new_host.to(q.device)
 cache.gqa_kv_cache_store(
     k_new, v_new,
     pools["k_pool"], pools["v_pool"], slot, 4, 256,
@@ -233,15 +237,15 @@ partial, lse = fa.gqa_flash_attn_partial(
     q, pools["k_pool"], pools["v_pool"], table, lengths,
     1.0 / 16.0, 4, 256,
 )
-torch.zeus.synchronize()
+torch.zeus.synchronize(q.device)
 ```
 
-更新和读取要由配套运行时维持正确的执行顺序；若把它们放到不同执行流，需要建立明确的依赖，不能仅依靠 Python 源码先后。上例在取结果之前同步，Host 参考则相应更新 `k_host[:,389,:]` 和 `v_host[:,389,:]` 后再计算。
+更新和读取按同一执行流提交。若分到不同流，须在消费前等待写入完成。Host 参考先更新 `k_host[:,645,:]` 和 `v_host[:,645,:]`，再按页表读取。
 
 这个兼容 helper 以未包装的核地址对象提交池参数，不能据此假定运行时已自动把它标为可写。若此前通过 `.cpu()` 或 `to_gdg()` 建立过 LocalMem 的线性视图缓存，调试读回前应在写入完成后明确使缓存失效。
 
 ```python
-torch.zeus.synchronize()
+torch.zeus.synchronize(q.device)
 pools["k_pool"].invalidate_cache()
 pools["v_pool"].invalidate_cache()
 ```
@@ -287,7 +291,7 @@ $$
 
 所有块结束后输出 $O/l$，同时可输出 `LSE=m+log(l)`。旧的 l 与 O 原来采用 m 为指数基准，必须乘以相同的 $\alpha$，才能与新基准下的 P 合并。只缩放 l、不缩放 O，或者直接相加两个块的独立 softmax 输出，都会改变权重。
 
-![在线 softmax 的最大值、分母与输出状态共同更新](assets/online-softmax.svg){width=100%}
+![在线 softmax 的最大值、分母与输出状态共同更新](assets/online-softmax.svg){width=100% alt="新行最大值确定历史贡献的缩放因子。旧分母与旧输出各乘该因子，再加当前块贡献。数学状态与实现的有限保护另见正文。"}
 
 用两个标量 token 手算可以验证递推。第一块 score 为 0、value 为 1，状态是 `m=0,l=1,O=1`。第二块 score 为 `log(2)`、value 为 3，新最大值为 `log(2)`，旧状态缩放因子为 1/2，新概率未归一化值为 1。于是 `l=1.5,O=3.5`，最终输出 `7/3`，与完整 softmax 权重 `1/3,2/3` 一致。这个小算例仅用于数学推导，不是设备合法 tile 的规格。
 
@@ -322,22 +326,24 @@ m_state = m_new
 
 该源码路径的有限 score 哨兵依赖输入范围，不能把它描述成对任意 FP32、NaN 或 Inf 都等价于负无穷。非空行的最大有效 score 应不低于初始 m 哨兵；否则指数和可能小于一，最终分母保护会改变归一化结果。特别是有 Inf 时，先乘零再加哨兵并不能得到合法的有限 mask，因为 `Inf*0` 会产生 NaN。接口应限定并检查正常推理范围，特殊值另行定义和测试。
 
-当 `seq_len=0` 时，序列循环不执行。配套路径保持 O=0，使用受保护分母输出零，并返回约定的有限 LSE 哨兵。消费者必须认识这一空分片约定，不能把它当作一个真实、概率为一的 token。数学公式中的 `-inf` 初始化与设备使用的有限哨兵是两个层次，不应混用而遗漏空状态处理。
+当 `seq_len=0` 时，配套路径返回零向量和有限 LSE 哨兵 `-1e9`。组装分片结果时保留各分片的有效长度，按下一节处理空分片。
 
 ## 分片结果如何合并
 
 ### 归一化输出必须配合 LSE
 
-如果不同 context-parallel 分片各自处理一段 token，分片 c 返回已经归一化的 $o_c$ 和 $L_c=\log\sum_j\exp(s_{c,j})$。直接对 $o_c$ 求平均不正确，因为不同分片的概率总质量不相同。令 $L_{\max}=\max_cL_c$，则
+如果不同 context-parallel 分片各自处理一段 token，分片 c 返回已经归一化的 $o_c$ 和 $L_c=\log\sum_j\exp(s_{c,j})$。令 $\mathcal V$ 为有有效 token 的分片集合，$L_{\max}=\max_{c\in\mathcal V}L_c$，则
 
 $$
-w_c=\exp(L_c-L_{\max}),\qquad
-o=\frac{\sum_cw_co_c}{\sum_cw_c}.
+w_c=\exp(L_c-L_{\max})\quad(c\in\mathcal V),\qquad
+o=\frac{\sum_{c\in\mathcal V}w_co_c}{\sum_{c\in\mathcal V}w_c}.
 $$
 
 这个公式解释了为什么 partial 输出和 LSE 必须成对传递，也解释了为什么一个分片的序列长度改变后，需要重新计算它的 LSE。通信必须保持 batch、head、分片顺序一致；把正确的输出与另一个请求的 LSE 配对，会得到看似平滑但错误的结果。
 
-源实现为避免极端指数范围还会采用有限截断，其结果应按对应数值契约检查。若所有分片为空，先采用接口定义的空输出，不把一般非空公式直接用于 `0/0`。若仅一个分片非空，合并结果应接近该分片的结果，可用作定向检查。
+数学参考从有效长度得到 $\mathcal V$。全空时直接产生零输出，数学 LSE 为 $-\infty$。混合空分片时，只用有效分片计算最大值、分子和分母。只剩一个有效分片时，结果等于该分片输出。
+
+配套归约器使用有限 LSE 哨兵和 `exp(max(L_c - L_max, -60))`。该权重仍会进入分母。若有效分片的 LSE 恰为 `-1e9`，与空分片哨兵相等，直接套用归约器会把该分片的输出缩小一半。使用此实现时，须按部署允许的 score 范围验证哨兵距离及误差，或在合并前按有效长度处理空分片。回归包含混合空、全空、单个有效分片和最低允许的有效 score。递推分母的数值保护见[Zeus 在线 Softmax](#api-online-softmax)。
 
 ### 输出投影的分工改变了同步需求
 
@@ -351,35 +357,35 @@ attention 的输出按 head 拼接后，逻辑宽度为 `Hq*D`。若输出投影
 
 先让缓存使用可辨认的有限值，选一个 slot 更新 K/V，然后读回目标及其前后邻居。K 要检查 64 列段和 128 行块边界，V 要检查 64 token 列块边界。对本章布局，优先选择 slot `0,63,64,127,128,255,256,389,1023`，分别覆盖块内、换块和池末尾；这些是测试建议，执行覆盖以验证记录为准。
 
-单次写入通过后，再连续更新两个相邻 slot，检查后一次没有破坏前一次。随后在同一物理页内改变请求的有效长度，确保 attention 只读取规定前缀。最后再把页表换为非连续映射，例如 `[3,1]`。始终使用 `[0,1]` 的连续页表，无法暴露逻辑 token 与物理 slot 混用的问题。
+本例先对拍 slot 645、相邻的 644 和 646、以及错误实现会写到的 slot 389。再用页表 `[3,2]` 追加逻辑 token 255 和 256，分别检查物理 slot 1023 和 512。V 的相邻列可能共享底层事务字，按[写入归属](#external-write-ownership)安排同一物理字的更新顺序。两个调用完成并发布长度后，再比较 attention 输出。
 
 ### 建立不依赖物理打包的 Host 参考
 
-Host 参考保留 `[Hkv,R,D]` 的逻辑 K/V，按页表生成 slot 序列，再逐 head 计算。下面先把 slot 389 替换成新值，再对应本章一次更新后的请求求参考。
+Host 参考保留 `[Hkv,R,D]` 的逻辑 K/V，由页表生成 slot 序列。本例依次读取 `[768,1024)` 和 `[512,646)`。在随书 `examples/` 目录下可复用下列参考及比较函数。
 
 ```python
-k_host[:, 389, :] = k_new_host[0]
-v_host[:, 389, :] = v_new_host[0]
-slots = torch.cat((torch.arange(768, 1024),
-                   torch.arange(256, 390)))
-reference = torch.empty(16, 256, dtype=torch.float32)
-for head in range(16):
-    kv_head = head // 8
-    keys = k_host[kv_head].index_select(0, slots).float()
-    values = v_host[kv_head].index_select(0, slots).float()
-    query = q_host[0, head].float()
-    scores = (query @ keys.T) / 16.0
-    probability = torch.softmax(scores, dim=-1)
-    reference[head] = probability @ values
+from paged_attention_reference import check_outputs, reference
+
+k_host[:, 645, :] = k_new_host[0]
+v_host[:, 645, :] = v_new_host[0]
+expected, expected_lse = reference(
+    q_host, k_host, v_host, (3, 2), 390, page_size=256,
+)
+check_outputs(
+    partial, lse, expected, expected_lse,
+    partial_atol=partial_atol, lse_atol=lse_atol,
+)
 ```
 
-这份参考不使用 LDG 物理公式，因而能独立检查页表、head 映射和数学目标。另写一份按 `BLOCK_S=256` 递推的参考，加入概率 BF16 转换，便于定位实现精度。不要让 Host 参考复制同一套错误的物理写入公式，再据此宣布缓存正确。
+从应用的精度验收配置分别传入 `partial_atol` 和 `lse_atol`。比较函数回读 BF16 `[1,16,256]` 的 partial 与 FP32 `[1,16]` 的 LSE，报告两者的最大绝对误差。该 Host 参考独立按逻辑页表、head 映射和 FP32 数学目标求值。诊断偏差时，可再用同样的 `BLOCK_S=256` 和概率 BF16 转换复现设备数值路径。
+
+专用 K/V 路径可用同页长 1024、D=128 的写入、索引与 QK/PV 组合另做对拍。[第四章](#ldg-append-token)的写入与配套专用读取算例各自说明其接口，验证范围以对应测试配置为准。
 
 ### 按症状缩小到一个阶段
 
 | 现象 | 首要检查 | 定向用例 |
 |---|---|---|
-| 一页正确，跨页后错 | 页号与 slot 换算 | 非连续页表 `[3,1]` |
+| 一页正确，跨页后错 | 页号与 slot 换算 | 逆序页表 `[3,2]` |
 | K 正确、V 错位 | V 列写入及转置布局 | 单 slot、单维度标记 |
 | 整块正确，尾块偏差大 | score 有效域 | S=255、256、257、390 |
 | 增加新块后历史贡献错 | m 改变时的双重缩放 | 后一块出现更大 score |

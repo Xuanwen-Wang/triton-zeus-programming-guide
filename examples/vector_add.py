@@ -31,13 +31,28 @@ def add_bf16(
     start = core_id * quotient + tl.minimum(core_id, remainder)
 
     x_block = tl.make_block_ptr(
-        in1_ptr, (numel,), (1,), (0,), (BLOCK,), (0,)
+        base=in1_ptr,
+        shape=(numel,),
+        strides=(1,),
+        offsets=(0,),
+        block_shape=(BLOCK,),
+        order=(0,),
     )
     z_block = tl.make_block_ptr(
-        in2_ptr, (numel,), (1,), (0,), (BLOCK,), (0,)
+        base=in2_ptr,
+        shape=(numel,),
+        strides=(1,),
+        offsets=(0,),
+        block_shape=(BLOCK,),
+        order=(0,),
     )
     y_block = tl.make_block_ptr(
-        out_ptr, (numel,), (1,), (0,), (BLOCK,), (0,)
+        base=out_ptr,
+        shape=(numel,),
+        strides=(1,),
+        offsets=(0,),
+        block_shape=(BLOCK,),
+        order=(0,),
     )
 
     for local_tile in range(count):
@@ -127,10 +142,13 @@ def main():
     parser.add_argument("--run-device", action="store_true")
     parser.add_argument("--device", default="zeus:0")
     args = parser.parse_args()
+    if args.run_device and args.alpha != 1.0:
+        parser.error("--run-device uses the exact alpha=1.0 smoke test")
     x, z = make_inputs(args.numel)
     expected = reference(x, z, args.alpha)
     report = {
         "execution": "cpu_reference_only",
+        "kernel_launched": False,
         "numel": args.numel,
         "alpha": args.alpha,
         "input_dtype": "bfloat16",
@@ -144,16 +162,17 @@ def main():
         actual = launch(
             x.to(args.device), z.to(args.device), args.alpha
         )
-        torch.zeus.synchronize()
+        launched = args.numel > 0
+        if launched:
+            torch.zeus.synchronize(actual.device)
         actual_cpu = actual.cpu()
-        # The smoke-test data are exact for alpha=1. Other alpha values may
-        # need a separately specified fused-arithmetic numerical contract.
         torch.testing.assert_close(
             actual_cpu, expected, rtol=0, atol=0
         )
         error = (actual_cpu.float() - expected.float()).abs()
         report.update(
-            execution="zeus_runtime",
+            execution="zeus_runtime" if launched else "empty_output",
+            kernel_launched=launched,
             device=str(actual.device),
             exact_match=True,
             max_abs=float(error.max()) if error.numel() else 0.0,

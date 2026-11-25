@@ -28,15 +28,28 @@ def fused_add_rmsnorm_bf16(
     count = base + tl.where(core < extra, 1, 0)
     first = core * base + tl.minimum(core, extra)
     xp = tl.make_block_ptr(
-        x_ptr, (N, D), (D, 1), (0, 0),
-        (BLOCK_TOKENS, BLOCK_HIDDEN), (1, 0),
+        base=x_ptr,
+        shape=(N, D),
+        strides=(D, 1),
+        offsets=(0, 0),
+        block_shape=(BLOCK_TOKENS, BLOCK_HIDDEN),
+        order=(1, 0),
     )
     rp = tl.make_block_ptr(
-        residual_ptr, (N, D), (D, 1), (0, 0),
-        (BLOCK_TOKENS, BLOCK_HIDDEN), (1, 0),
+        base=residual_ptr,
+        shape=(N, D),
+        strides=(D, 1),
+        offsets=(0, 0),
+        block_shape=(BLOCK_TOKENS, BLOCK_HIDDEN),
+        order=(1, 0),
     )
     wp = tl.make_block_ptr(
-        weight_ptr, (D,), (1,), (0,), (BLOCK_HIDDEN,), (0,),
+        base=weight_ptr,
+        shape=(D,),
+        strides=(1,),
+        offsets=(0,),
+        block_shape=(BLOCK_HIDDEN,),
+        order=(0,),
     )
     w = tl.load(wp, boundary_check=(0,), padding_option="zero")
     w32 = w.to(tl.float32)
@@ -105,7 +118,7 @@ def run_device(x, residual, weight, eps):
         xd, rd, wd, rows, width, eps, **constants,
         zeus_enable_jit=True, zeus_strict=True,
     )
-    torch.zeus.synchronize()
+    torch.zeus.synchronize(xd.device)
     return xd.cpu(), rd.cpu()
 
 

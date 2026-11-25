@@ -73,8 +73,12 @@ core = tl.program_id(0)
 address = tl.load(weight_ptr_list + core)
 base = address.to(tl.pointer_type(tl.bfloat16))
 w_desc = tl.make_block_ptr(
-    base, (N, K), (K, 1), (n0, k0),
-    (BLOCK_N, BLOCK_K), (1, 0),
+    base=base,
+    shape=(N, K),
+    strides=(K, 1),
+    offsets=(n0, k0),
+    block_shape=(BLOCK_N, BLOCK_K),
+    order=(1, 0),
 )
 w = tl.load(w_desc, memory_type="weight")
 ~~~
@@ -106,7 +110,7 @@ scale_address = tl.load(scale_ptr_list + core)
 scale_base = scale_address.to(
     tl.pointer_type(tl.bfloat16),
 )
-scale_page = scale_base + page_id * 8192
+scale_page = scale_base + scale_start_page * 8192
 
 w = tl.load(
     w4_desc, memory_type="weight",
@@ -115,13 +119,15 @@ w = tl.load(
 )
 ~~~
 
-`8192` 是一个 16 KiB 页中的 BF16 元素数。`scale_page` 必须是指向 LDG 页首的**标量 BF16 指针**，不能是整数地址、指针张量或块指针。weight 端必须是块指针，且调用须显式指定 `ugroup`。传入的页需要已经按 UScale 格式排列；普通 GDG 中的二维系数矩阵不符合此契约。
+`8192` 是一个 16 KiB 页中的 BF16 元素数。`scale_start_page` 是生产者为当前已打包权重 tile 分配的系数区起始页，由调用者一同传入。比如两块权重分别配套独立区的第 1 页与第 4 页，两次读取各绑定对应页首。权重描述符推进时，调用者同时选择该块的 scale 页。
+
+`scale_page` 是指向已按 UScale 格式填充的 LDG 页首的**标量 BF16 指针**。weight 端使用块指针，并显式指定 `ugroup`。普通 GDG 的二维系数矩阵需由生产者先打包并写入 LDG。
 
 ::: {.caution}
 `uscale` 绑定的是 16 KiB 对齐的物理页，不是某个 scale 元素。页内定位由分组与矩阵坐标共同决定。把逻辑组号作为地址，或用普通系数张量替代物理页，即使元素类型相同，也会读取错误位置。
 :::
 
-UScale 也可用于带分组缩放的 FP8 权重：此时保留 `ugroup` 及必要的 `uscale`，省略 `weight_dtype`。是否使用 INT4 与是否使用分组 scale 是两个独立问题，不能把二者视为同一个开关。
+带分组缩放的 FP8 权重保留 `ugroup` 及必要的 `uscale`，使用 FP8 指针类型。非 INT4 且 scale 相邻的降级路径要求 `BLOCK_N`、`BLOCK_K` 都是 128 的倍数。实际可用组合按配套 SDK 与[附录支持表](#api-support)核对。
 
 ### 专用 K/V 装载与 page_size {#api-cache-load}
 
@@ -135,8 +141,12 @@ UScale 也可用于带分组缩放的 FP8 权重：此时保留 `ugroup` 及必�
 
 ~~~python
 k_desc = tl.make_block_ptr(
-    k_index_base, (1024, 128), (128, 1),
-    (seq_start, 0), (128, 128), (1, 0),
+    base=k_index_base,
+    shape=(1024, 128),
+    strides=(128, 1),
+    offsets=(seq_start, 0),
+    block_shape=(128, 128),
+    order=(1, 0),
 )
 k_tile = tl.load(
     k_desc, memory_type="kcache", page_size=1024,
@@ -190,8 +200,12 @@ LW 的 `blocksize` 必须是不小于 128 的 2 次幂。它描述布局中的�
 
 ~~~python
 dst = tl.make_block_ptr(
-    ldg_base, (128, 128), (128, 1),
-    (0, 0), (128, 128), (1, 0),
+    base=ldg_base,
+    shape=(128, 128),
+    strides=(128, 1),
+    offsets=(0, 0),
+    block_shape=(128, 128),
+    order=(1, 0),
 )
 tl.store(
     dst, values, memory_type="weight",
@@ -213,8 +227,12 @@ LW 的目标必须能追溯到真实的 LDG 分配。类型转换和存储模式
 
 ~~~python
 dst = tl.make_block_ptr(
-    payload_base, (1024, 128), (128, 1),
-    (token_offset, 0), (1, 128), (1, 0),
+    base=payload_base,
+    shape=(1024, 128),
+    strides=(128, 1),
+    offsets=(token_offset, 0),
+    block_shape=(1, 128),
+    order=(1, 0),
 )
 tl.store(
     dst, token, memory_type="kcache",
@@ -257,16 +275,24 @@ tl.zeus.softmax(x, axis=-1)
 
 该接口计算数值稳定的 Softmax，输入与输出 shape、dtype 相同。Zeus 专用路径接受 FP32 或 BF16；rank 为 1 至 4，归约轴必须是最内维，其他前导维必须静态为 1，最内维长度必须静态为正。因此 $[1,N]$ 可以表示一行，$[M,N]$ 在 $M>1$ 时不能一次调用后期待独立处理 M 行。
 
-下面延续随书 FP32 示例，一次处理一行，静态宽度为 1024。`row` 是有效行号，`width` 在 1 至 1024 之间，描述符保留真实的矩阵宽度。
+下面延续随书 FP32 示例，一次处理一行。`shape=(rows, width)` 保留真实宽度（1 至 1024），`block_shape=(1, 1024)` 给出静态 tile。`offsets=(row, 0)` 选择当前行，两个描述符的 `base` 分别指向输入和输出。
 
 ~~~python
 src = tl.make_block_ptr(
-    input_ptr, (rows, width), (width, 1),
-    (row, 0), (1, 1024), (1, 0),
+    base=input_ptr,
+    shape=(rows, width),
+    strides=(width, 1),
+    offsets=(row, 0),
+    block_shape=(1, 1024),
+    order=(1, 0),
 )
 dst = tl.make_block_ptr(
-    output_ptr, (rows, width), (width, 1),
-    (row, 0), (1, 1024), (1, 0),
+    base=output_ptr,
+    shape=(rows, width),
+    strides=(width, 1),
+    offsets=(row, 0),
+    block_shape=(1, 1024),
+    order=(1, 0),
 )
 x = tl.load(
     src, boundary_check=(0, 1), padding_option="zero",

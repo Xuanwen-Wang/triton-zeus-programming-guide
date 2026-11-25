@@ -143,69 +143,6 @@ torch.testing.assert_close(
 
 特别注意 `f32(1.0)` 的参数包类型与 Triton 签名中的 `fp32` 是两套接口中的名称。不要为了让字符串看起来一致而将它们互换。输入/输出 `direction` 用于描述参数方向，不负责分配、复制或隐式同步。
 
-### Stream、同步与结果生命周期
-
-Kernel 提交成功表示运行时已接受操作，不能直接等同于输出已经可被宿主读取。原生启动器使用目标设备的当前 stream；输入、输出与临时分配必须在相关操作完成前保持有效。
-
-入门脚本在取回结果前显式同步。
-
-```python
-actual = launch(x_device, z_device, alpha=1.0)
-torch.zeus.synchronize()
-actual_cpu = actual.cpu()
-torch.testing.assert_close(actual_cpu, expected,
-                           rtol=0, atol=0)
-```
-
-这里使用零容差，是因为首个 smoke test 的输入和 `alpha=1` 被设计为可精确表示。扩展到一般随机数据和其他算法后，应使用[精度与边界测试](#debugging)中的数值契约，不能把零容差当作所有算子的统一标准。
-
-异步流水中应通过所用运行时的 stream 和事件机制表达跨 stream 依赖。只在 Python 中先后调用两个函数，并不能替代跨 stream 同步。对 Graph 或长期复用 buffer 的集成，还需检查输入内容更新、地址稳定性和 replay 期间的资源生命周期。
-
-![跨 stream 消费与输入输出资源的有效期](assets/runtime-lifecycle.svg){#fig-runtime-lifecycle width=100%}
-
-### 用 stream 表达依赖
-
-同一 stream 中提交的操作按其顺序执行。不同 stream 之间使用 `wait_stream` 建立依赖边：消费 stream 后续提交的操作，等待生产 stream 在这个等待点之前已提交的工作。它不约束生产 stream 将来才提交的新工作，也不是让整个宿主线程等待。
-
-下面连续调用两次向量算子，第二次依赖第一次的输出。输入复制先发生在当前 stream，producer 在读取输入前等待该 stream；consumer 再等待 producer。代码没有假定复制与计算一定重叠，也没有把 Python 语句顺序当作设备完成顺序。
-
-```python
-import torch
-import torch_zeus
-from examples.vector_add import launch, make_inputs, reference
-
-hx, hz = make_inputs(2500)
-x, z = hx.to("zeus:0"), hz.to("zeus:0")
-initial = torch.zeus.current_stream(0)
-producer = torch.zeus.Stream(device=0)
-consumer = torch.zeus.Stream(device=0)
-producer.wait_stream(initial)
-with torch.zeus.stream(producer):
-    middle = launch(x, z)
-consumer.wait_stream(producer)
-with torch.zeus.stream(consumer):
-    result = launch(middle, z)
-consumer.synchronize()
-expected = reference(reference(hx, hz), hz)
-torch.testing.assert_close(
-    result.cpu(), expected, rtol=0, atol=0,
-)
-```
-
-`x`、`z`、`middle` 和 `result` 在同步完成前均保持可达。消费者提交后立即把 `middle` 交给另一个写入者复用，仍可能破坏结果：wait 只处理等待方的执行顺序，不使内存自动成为不可修改的快照。
-
-需要更细的完成点时，使用事件记录生产进度，再让消费 stream 等待该事件。
-
-```python
-ready = producer.record_event()
-consumer.wait_event(ready)
-with torch.zeus.stream(consumer):
-    result = launch(middle, z)
-consumer.synchronize()
-```
-
-上述片段替换前例中的 `consumer.wait_stream(...)` 及其后续消费部分。事件应记录在生产操作之后。若放在生产之前，它只证明旧工作完成，不能保护新输出。`stream.synchronize()` 等待该 stream，`torch.zeus.synchronize(device)` 等待目标设备；选择能够覆盖实际依赖的最小同步范围。
-
 ### JIT 的冷启动与缓存
 
 首次遇到一个特化时，JIT 可能需要生成 TTIR、编译 `.zbin` 并加载。后续相同特化可命中进程内缓存；进程重启后还可命中持久缓存。这三种情况的耗时含义不同。
@@ -428,53 +365,84 @@ add_bf16[(2,)](
 
 当前 AOT schema 2 会记录每个条目的有效编译选项。若未通过属性记录，却在环境中遗留非空 `ZEUS_COMPILER_EXTRA_FLAGS`，bundle 构建会拒绝这种无法完整表达身份的输入。修复方式是把所需选项显式纳入特化记录，而不是只在构建机器上手工设置环境。
 
-### Graph 捕获前准备产物
+## Stream 与 Graph {#streams-and-graph}
 
-Graph 重放减少的是重复提交的工作，不重新执行 Python 控制流来选择新的 constexpr。捕获时必须已经有可用的 kernel 产物：先预加载 AOT，或者在捕获开始前完成相同特化的 JIT 预热。启动器在捕获期间只查找已经准备好的产物；缺少产物会报告需要预加载或预热，不会在捕获中临时编译。
+### Stream、同步与结果生命周期
 
-下面给出固定地址输入的最小流程。它要求配套运行时提供 Zeus Graph；与普通 launch 一样，输入为一维连续 BF16、核数为 2。前一代码块完成分配和预热，后一代码块在同一进程中捕获、修改输入内容并重放。
+Kernel 提交成功表示运行时已接受操作，不能直接等同于输出已经可被宿主读取。原生启动器使用目标设备的当前 stream；输入、输出与临时分配必须在相关操作完成前保持有效。
+
+入门脚本在取回结果前显式同步。
+
+```python
+actual = launch(x_device, z_device, alpha=1.0)
+torch.zeus.synchronize(actual.device)
+actual_cpu = actual.cpu()
+torch.testing.assert_close(actual_cpu, expected,
+                           rtol=0, atol=0)
+```
+
+这里使用零容差，是因为首个 smoke test 的输入和 `alpha=1` 被设计为可精确表示。扩展到一般随机数据和其他算法后，应使用[精度与边界测试](#debugging)中的数值契约，不能把零容差当作所有算子的统一标准。
+
+异步流水中应通过所用运行时的 stream 和事件机制表达跨 stream 依赖。只在 Python 中先后调用两个函数，并不能替代跨 stream 同步。对 Graph 或长期复用 buffer 的集成，还需检查输入内容更新、地址稳定性和 replay 期间的资源生命周期。
+
+![跨 stream 消费与输入输出资源的有效期](assets/runtime-lifecycle.svg){#fig-runtime-lifecycle width=100%}
+
+### 用 stream 表达依赖
+
+同一 stream 中提交的操作按其顺序执行。不同 stream 之间使用 `wait_stream` 建立依赖边：消费 stream 后续提交的操作，等待生产 stream 在这个等待点之前已提交的工作。它不约束生产 stream 将来才提交的新工作，也不是让整个宿主线程等待。
+
+下面连续调用两次向量算子，第二次依赖第一次的输出。输入复制先发生在当前 stream，producer 在读取输入前等待该 stream；consumer 再等待 producer。代码没有假定复制与计算一定重叠，也没有把 Python 语句顺序当作设备完成顺序。
 
 ```python
 import torch
 import torch_zeus
-from torch_zeus.zeus import ZEUSGraph, graph, Stream
-from examples.vector_add import add_bf16, make_inputs
-from examples.vector_add import reference
+from examples.vector_add import launch, make_inputs, reference
 
 hx, hz = make_inputs(2500)
 x, z = hx.to("zeus:0"), hz.to("zeus:0")
-out = torch.empty_like(x)
-capture_stream = Stream(device=0)
-
-def submit():
-    add_bf16[(2,)](
-        out, x, z, 2500, 1.0,
-        BLOCK=1024, CORE_NUM=2,
-    )
-
-submit()
-torch.zeus.synchronize(0)
+initial = torch.zeus.current_stream(0)
+producer = torch.zeus.Stream(device=0)
+consumer = torch.zeus.Stream(device=0)
+producer.wait_stream(initial)
+with torch.zeus.stream(producer):
+    middle = launch(x, z)
+consumer.wait_stream(producer)
+with torch.zeus.stream(consumer):
+    result = launch(middle, z)
+consumer.synchronize()
+expected = reference(reference(hx, hz), hz)
+torch.testing.assert_close(
+    result.cpu(), expected, rtol=0, atol=0,
+)
 ```
+
+`x`、`z`、`middle` 和 `result` 在同步完成前均保持可达。消费者提交后立即把 `middle` 交给另一个写入者复用，仍可能破坏结果：wait 只处理等待方的执行顺序，不使内存自动成为不可修改的快照。
+
+需要更细的完成点时，使用事件记录生产进度，再让消费 stream 等待该事件。
 
 ```python
-recorded = ZEUSGraph()
-with graph(recorded, stream=capture_stream):
-    submit()
-
-changed = (hx.float() * 2).to(torch.bfloat16)
-with torch.zeus.stream(capture_stream):
-    x.copy_(changed)
-    recorded.replay()
-capture_stream.synchronize()
-torch.testing.assert_close(
-    out.cpu(), reference(changed, hz), rtol=0, atol=0,
-)
-recorded.reset()
+ready = producer.record_event()
+consumer.wait_event(ready)
+with torch.zeus.stream(consumer):
+    result = launch(middle, z)
+consumer.synchronize()
 ```
 
-此处更新的是 `x` 所在内存的内容，`x` 的设备地址、形状和类型不变；`2500` 与 `1.0` 是被捕获调用中的标量，不会因为宿主后来给同名 Python 变量赋值而自动更新。若要改变标量、shape 或 buffer 地址，应采用配套 Graph 的明确更新机制或重新捕获，不依赖 Python 闭包的重新求值。
+上述片段替换前例中的 `consumer.wait_stream(...)` 及其后续消费部分。事件应记录在生产操作之后。若放在生产之前，它只证明旧工作完成，不能保护新输出。`stream.synchronize()` 等待该 stream，`torch.zeus.synchronize(device)` 等待目标设备；选择能够覆盖实际依赖的最小同步范围。
 
-捕获失败后，不应把部分记录当作完整 Graph 使用。保留原始异常和捕获阶段，释放失败对象，再从稳定的分配与预热阶段重新开始。重放输出要用至少两组不同输入检查，单次对拍无法识别输入未更新或误复用录制结果的问题。
+### 捕获前准备特化并重放两组输入 {#graph-replay}
+
+Graph 捕获使用已准备好的 kernel 特化。可在捕获前使用相同参数完成 JIT 预热，或按 [AOT 章节](#zecc-and-aot)预装相应产物。重放沿用捕获时的地址、标量和 constexpr。改变输入内容时，先向同一地址写入新数据，再在建立依赖的 stream 上重放。
+
+完整程序 `examples/graph_vector_add.py` 用同一份 BF16 输出缓冲区验证两次重放。请在 Graph 可用的配套 SDK 中运行。
+
+```bash
+ZECC_KERNEL_MODE=jit python examples/graph_vector_add.py --device zeus:0
+```
+
+脚本先分配 X、Z、输出并预热，然后在专用 stream 上捕获一次。重放两次分别把 X 改为原始值的两倍和相反数。每次重放后等待该 stream，逐元素比较对应的 CPU 参考。通过时 JSON 报告 `replays=2` 和两组结果预览。
+
+调整 shape、标量或 buffer 地址时，采用配套 Graph 的更新机制或重新捕获。失败时保留捕获或重放阶段和首次异常。验证记录分别登记接口核查与 SDK 实跑。
 
 ## 查看 IR、汇编与二进制 {#compiler-artifacts}
 
@@ -613,7 +581,7 @@ arg = zecc_jit.tensor_ptr(
 
 资源启动器检查分配是否仍有效、是否属于启动设备，并保留完成所需的分配引用。普通异步提交会记录 stream 使用；Graph 捕获则将引用附着到 Graph，并在相应重放之前处理写入视图缓存。上述管理保护分配有效性，不自动建立跨 stream 的读写先后关系。生产者和消费者仍须使用本章给出的 wait 或事件依赖。
 
-### 外部访问保证与参数属性
+### 外部访问保证与参数属性 {#external-write-ownership}
 
 某些窄元素访问需要对完整外部存储字进行读取或读改写。逻辑上只访问一个 BF16 元素，不一定意味着底层只接触这两个字节。若调用方确实提供了额外的可读范围或独占范围，可在源码模块级声明 `arg_attrs`。
 

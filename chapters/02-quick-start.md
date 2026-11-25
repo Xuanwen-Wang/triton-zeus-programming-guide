@@ -4,13 +4,24 @@
 
 两组上手输入共用 $\alpha=1$、`BLOCK=1024` 和 `CORE_NUM=2`。$N=2048$ 检查完整 tile，$N=2500$ 检查尾块。先使用可精确表示的小数做严格比较，之后再加入随机输入与误差评估，可以较快区分索引、边界和数值问题。
 
-## 安装和检查环境
+## 安装和检查环境 {#setup-environment}
 
-### 准备配套工具
+### 取得同版示例与配套 SDK {#example-download}
 
-安装所用发行版本配套的 Zeus Triton、PyTorch、`torch_zeus`、`zecc_jit` 原生扩展和 SDK 运行时。使用功能模拟 SDK 时，还应按发行说明配置配套模拟器；使用物理设备 SDK 时，完成驱动和设备检查。后续 Python 程序负责传入张量，运行时负责提交编译产物与执行参数，读者无需另写模拟器启动脚本。
+在支持附件的 PDF 阅读器中打开本指南，从附件面板保存 `Triton-Zeus-Examples-<版本>.zip`。解压后，命令从含 `examples/` 的目录运行。附件与封面版本一同构建。也可从[指南仓库](https://github.com/Xuanwen-Wang/triton-zeus-programming-guide)取得源码，按该版 `pdf-build.json` 核对示例文件的 SHA-256。使用和分发范围见[版权声明](#copyright)。
 
-不同发行环境对 Python 版本、native ABI 和库搜索路径的要求可能不同，安装时使用同一份发布清单。不要在已验证的环境里单独升级一个同名包，再沿用旧版本的编译器或运行时。源码开发环境还应使用该 checkout 的环境激活入口，确认环境变量没有指向其他构建目录。
+通过北极雄芯的产品交付或技术支持渠道取得适用 Zeus V3 配置的 SDK、安装说明和配套清单。按同一份清单完成安装与后端准备，并记录下表项目。具体版本号随实际 SDK 交付。
+
+| 配套项 | 需要核对的内容 |
+|---|---|
+| 设备与系统 | Zeus V3 设备配置、Linux/架构、驱动版本或模拟器版本 |
+| Python 与框架 | Python、PyTorch、Zeus Triton、`torch_zeus` 的包与 ABI |
+| 编译和运行时 | `zecc_jit`、ZECC 与 Zeus 编译器构建，SDK 发行标识 |
+| 执行配置 | JIT 模式、设备索引、功能模拟或物理设备 |
+
+Table: 客户安装与运行记录的配套项
+
+### 检查环境
 
 进入随书工程根目录，先生成环境记录
 
@@ -22,13 +33,14 @@ python examples/check_environment.py \
 
 `zeus_language_extension` 应为 `true`，表示已加载 Zeus 语言扩展。再检查 `executable`、模块 `origin` 和工具路径：`triton` 应为 Zeus 配套构建，`zecc` 与 `zeus-compiler` 应来自本次工具链。版本号相同但路径不同，仍可能是不同的源码或构建产物。
 
-脚本默认只检查导入位置和工具路径，不启动 kernel。需要检查 PyTorch 设备注册时，显式运行
+脚本默认收集导入位置和工具路径。准备使用 JIT 时，运行严格前置检查。
 
 ```bash
-python examples/check_environment.py --probe-runtime
+python examples/check_environment.py --require-jit \
+  > build/jit-environment.json
 ```
 
-`runtime_probe` 中的 `registered` 表示 `torch.zeus` 接口已注册，`available` 表示运行时判断设备可用。安装环境如使用模拟器适配器，这两项也可能成立。测试记录应同时注明实际后端；本章脚本不会自动替换后端或修改模拟器环境变量。
+`jit_prerequisites_ready=true` 表示 Zeus 语言扩展、`zecc_jit` 导入和设备运行时可用性检查均通过。任一前置检查失败时，严格模式返回非零。可用设备由 SDK 运行时报告，也可能是模拟器设备。实际后端随运行结果从 SDK 配置记录，kernel 执行通过本章向量加法结果确认。
 
 ### 常见检查结果
 
@@ -38,6 +50,7 @@ python examples/check_environment.py --probe-runtime
 | `tl.zeus` 不存在 | `triton.__file__`、wheel 来源 | 核对是否为 Zeus 构建 |
 | 找不到 `zecc` | `PATH` 与 wheel 工具目录 | 恢复配套工具入口 |
 | `torch_zeus` 导入失败 | native 库与 SDK 配套 | 查看首次导入异常 |
+| `zecc_jit` 导入失败 | 原生扩展与 Python ABI | 核对 SDK 清单与运行库搜索路径 |
 | 设备不可用 | 运行时配置与设备状态 | 先完成 SDK 的设备检查 |
 | 编译能通过，启动失败 | 运行时、产物与参数 ABI | 查阅编译执行与调试章节 |
 
@@ -101,17 +114,26 @@ start = core_id * quotient + tl.minimum(core_id, remainder)
 本例使用 `grid=(CORE_NUM,)`，`CORE_NUM=2` 表示两个参与核。三个 tile 由核内循环处理，不能沿用 GPU 的 `grid=(total_blocks,)`。完整推导见[编程模型](#kernel-launch)。
 :::
 
+::: {.keep}
+
 ### 用块指针描述一维数据
 
-块指针同时描述整个逻辑张量和一次处理的 tile。输入 `x` 的模板为
+块指针同时描述整个逻辑张量和一次处理的 tile。下面以输入 `x` 的模板为例。
 
 ```python
 x_block = tl.make_block_ptr(
-    in1_ptr, (numel,), (1,), (0,), (BLOCK,), (0,)
+    base=in1_ptr,
+    shape=(numel,),
+    strides=(1,),
+    offsets=(0,),
+    block_shape=(BLOCK,),
+    order=(0,),
 )
 ```
 
-字段依次为首地址、逻辑 shape、元素 stride、初始 offset、tile shape 和维度次序。`shape=(numel,)` 是整个输入的有效范围，`block_shape=(BLOCK,)` 是一次 load 的逻辑元素数，两者不必相等。连续一维张量的 stride 为 1，指针偏移以元素为单位。
+`base` 指向输入首元素。`shape=(numel,)` 给出整个输入的有效长度，`block_shape=(BLOCK,)` 给出每次 load 的 tile 长度。`strides=(1,)` 表示相邻元素间隔一个元素，`offsets=(0,)` 将模板放在输入起点，`order=(0,)` 指定唯一的维度。
+
+:::
 
 第二个输入和输出采用相同的逻辑 shape。循环每次用 `tl.advance` 把模板移动到当前 tile 的起点。`tl.advance` 生成新的块指针视图，不会搬运数据，也不会改变原输入的内容。
 
@@ -189,7 +211,7 @@ add_bf16[(cores,)](
 首次运行直接使用本节的 Python 命令和 PyTorch 参考比较。SDK 已配置功能模拟时，同一个 JIT 入口会提交到模拟后端，无须另写模拟测试脚本；`--run-device` 本身不选择运行后端。
 :::
 
-宿主在读取结果前调用 `torch.zeus.synchronize()`，随后把输出复制回 CPU，与相同 BF16 输入产生的参考结果比较。默认的有限输入和 $\alpha=1$ 使用 `rtol=0`、`atol=0` 的严格比较。通过时结果记录含有 `execution="zeus_runtime"`、`exact_match=true` 和 `max_abs=0.0`。`zeus_runtime` 表示调用经过设备运行时，并不表示一定在物理硬件上执行；保存运行输出时同时记录 SDK 后端。
+宿主调用 `torch.zeus.synchronize(out.device)` 等待输出所属设备，然后在 CPU 逐项比较。设备 smoke test 固定为有限输入和 $\alpha=1$，容差为零。`--alpha` 可用于 CPU 参考的其他有限值。扩展设备用例时，应先确定 FP32 融合或分步乘加的数值契约，再定义容差。
 
 ### 宿主侧的数据与资源生命周期
 
@@ -208,7 +230,7 @@ expected = reference(x_cpu, z_cpu)
 x = x_cpu.to("zeus:0")
 z = z_cpu.to("zeus:0")
 out = launch(x, z, block=1024, cores=2)
-torch.zeus.synchronize()
+torch.zeus.synchronize(out.device)
 actual = out.cpu()
 torch.testing.assert_close(
     actual, expected, rtol=0, atol=0
@@ -220,9 +242,11 @@ torch.testing.assert_close(
 
 示例出现异常时，应先保留完整异常和环境记录。通过移除同步、删除边界保护或放宽误差使命令不再报错，都会改变原来的验收问题，不能作为上手成功的依据。
 
+::: {.keep}
+
 ### 用 ZECC 离线编译
 
-离线编译可以独立检查源码与工具链的衔接，也适合查看编译产物。下面使用完整签名和常量生成 `.zbin`
+离线编译检查所用源码和特化能否生成相应设备产物。下面使用完整签名和常量生成 `.zbin`。
 
 ```bash
 zecc --compile-only-zbin \
@@ -239,6 +263,8 @@ zecc --compile-only-zbin \
   --loc=full
 ```
 
+:::
+
 `--compile-only-zbin` 模式下，命令行常量集合替换模块中的默认集合，因此要同时提供 `BLOCK` 和 `CORE_NUM`。`--loc=full` 请求源位置 sidecar 和对应的 TTIR 文件，便于将后续诊断关联回源程序。编译产物的文件名、签名和常量应随本次测试记录保存。
 
 此时得到的是目标程序，还没有运行任何输入。离线编译通过证明当前源码与特化可生成二进制；正确性仍由 Python 运行时执行后的结果比较确认。普通 JIT 调用会解析自己的特化，单独生成这份 `.zbin` 不会让下一次 Python 调用自动改用它。需要部署预编译产物时，使用[编译、执行与框架接入](#compile-and-run)中的 AOT bundle 流程。
@@ -247,26 +273,27 @@ zecc --compile-only-zbin \
 
 ### 理解一次运行的输出
 
-完整示例把输入生成、参考计算、kernel 调用与结果检查放在同一个程序中。以 N=2500 的运行结果为例，关键字段如下：
+下面是 N=2500 成功执行且逐项相等时的关键字段。
 
-```text
-"execution": "zeus_runtime"
-"numel": 2500
-"alpha": 1.0
-"exact_match": true
-"max_abs": 0.0
+```json
+{
+  "execution": "zeus_runtime",
+  "kernel_launched": true,
+  "device": "zeus:0",
+  "numel": 2500,
+  "exact_match": true,
+  "max_abs": 0.0
+}
 ```
 
 :::
 
-这些字段只在运行和比较成功后输出。若比较失败，`torch.testing.assert_close` 抛出异常；若编译、加载或执行失败，程序会在对应阶段报告错误。看到编译日志或 `.zbin` 文件存在，还不能判断结果比较已经通过。
+将 JSON、`jit-environment.json`、SDK 发行标识及实际后端一同保存。非空设备用例成功后应有 `kernel_launched=true`。CPU 参考和设备空输入分别输出 `cpu_reference_only` 和 `empty_output`，两者均为 `kernel_launched=false`。编译、执行或结果比较失败会以异常结束。
 
-将新算法接入这一模式时，保留四个部分：输入生成函数、PyTorch 参考函数、带参数检查的 `launch` 封装，以及同步读回后的比较。参考函数应使用实际送入设备的 dtype 和舍入后输入；例如 BF16 输入不能用其尚未舍入的 FP32 原值替代。这样功能模拟与物理设备可以复用同一套输入和结果判断。
-
-两组输入通过后，可保持其他参数不变，补查第二个 tile 仅有一个有效元素的情形：
+扩展用例时保留输入、CPU 参考、带参数检查的 launch 和同步回读，按设备实际收到的 dtype 与数值计算参考。两组输入通过后，补查第二个 tile 仅有一个有效元素。
 
 ```bash
 python examples/vector_add.py --numel 1025 --run-device
 ```
 
-检查整个有效输出，不用平均误差掩盖少数尾部错误。空输入、多轮循环、数值边界和错误定位见[调试与正确性验证](#debugging)；改变 block、核数或计算参数时，按该章方法重新确定测试范围。
+检查全部有效元素。更多边界和误差用例见[调试与正确性验证](#debugging)。
