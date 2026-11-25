@@ -329,7 +329,7 @@ Table: 随书示例的入口与证据
 
 Table: 本指南的验证层级
 
-本版通过 8 项离线编译、15 项 CPU 数学参考、11 项 Host 布局检查和 16 项 Python 功能仿真。功能仿真覆盖向量加法、BF16 和量化 Matmul、专用 K/V 追加与 Softmax。向量加法覆盖 2048、2500 与 1025。在客户环境中实施 Stream、Graph、AOT、SDK JIT 或物理设备用例时，应保存对应执行记录。环境与输出记录方式见[快速上手](#setup-environment)，源码与二进制身份见仓库的 `validation-summary.json`。
+本版通过 8 项离线编译、15 项 CPU 数学参考、11 项 Host 布局检查和 16 项 Python 功能仿真。功能仿真覆盖向量加法、BF16 和量化 Matmul、专用 K/V 追加与 Softmax。向量加法覆盖 2048、2500 与 1025。在客户环境中实施 Stream、Graph、AOT、SDK JIT 或物理设备用例时，应保存对应执行记录。环境与输出记录方式见[快速上手](#setup-environment)。
 
 ::: {.keep}
 
@@ -340,7 +340,7 @@ Table: 本指南的验证层级
 更新日期为 2026-11-25。
 
 - 硬件章节：补充 GDG、LDG 的单组、单核及整设备设计容量，并区分物理容量与运行时可分配空间；GDG 与 L2 Buffer–LDG 读写采用 51.2 GB/s 口径。
-- LDG 带宽采用 Zeus V3 的 15 credit／23 拍模型，分别说明连续读条件下的稳态出数间隔与单次请求计时，移除 WL1 到 PE 端口容量叠加项。
+- LDG 带宽说明 Zeus V3 的 15 credit／23 拍模型和稳态出数间隔，并列出 Zeus V3 PRO（518PRO）的两拍 miniblock 设计规格。移除 WL1 到 PE 的端口容量叠加项。
 - LDG 布局：先给用途与布局概览，再分别介绍 Weight 与分页 KV Cache；矩阵坐标和七维变换并入 Weight，区分紧排、块间 padding 及带 UScale 的配套格式。
 - LDG 图解：新增布局分类、miniblock 与八路 WL1、三种 Weight 排列对照；以 64 KiB PATCH 和 96 KiB 槽位说明 padding 与容量。
 - Zeus 编程接口：替换通用语言 API 罗列，集中说明特殊 load/store、量化与分页参数、专用计算、执行提示和提前退出约束。
@@ -350,7 +350,7 @@ Table: 本指南的验证层级
 - 全书版式：加入“注意、提示、注解”三类彩色框，突出 Grid、LDG 参数 ABI、数据准备和迁移约束；沿用仓库最新封面。
 - 扩展版权和责任声明，将同版示例附在 PDF 内，增加 JIT 前置检查、设备同步和验证结果的说明。
 - 六个块指针参数逐行标明。修正尾块保护区、K/V 目标和分页地址算例，并加入 partial 与 LSE 对拍。
-- 增加两组 Graph 重放、固定 BF16 Matmul 的 SDK 命令和相邻 UScale 的单槽位生成方法。
+- 增加两组 Graph 重放、固定 BF16 Matmul 的 SDK 命令和相邻 UScale 的单槽位生成方法。保留 Matmul 的权重准备、启动和对拍代码。
 - 解释 UScale 配对、空分片合并和 Matmul 累加依赖。目录显示前两级，PDF 书签继续覆盖细分章节。
 
 :::
@@ -418,7 +418,7 @@ Table: 本指南的验证层级
 - 版式样张：建立 A4 页面、标题层级、中文正文、代码与表格样式，确认 PDF 构建方式。
 :::
 
-仓库同步维护[更新记录](https://github.com/Xuanwen-Wang/triton-zeus-programming-guide/blob/main/CHANGELOG.md)。既有执行证据保留各自的源码和工具链身份。
+既有执行证据保留各自的源码和工具链身份。
 
 ### D.4 参考资料 {.unnumbered}
 

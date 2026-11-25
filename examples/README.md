@@ -1,6 +1,6 @@
 # Triton Zeus 随书示例
 
-从指南的 PDF 附件提取 ZIP，或从[指南仓库](https://github.com/Xuanwen-Wang/triton-zeus-programming-guide)取得与 PDF 构建记录匹配的源码。从解包目录运行以下命令。
+从指南的 PDF 附件提取同版示例 ZIP。在含 `examples/` 的解包目录运行以下命令。
 
 ```bash
 python examples/check_environment.py

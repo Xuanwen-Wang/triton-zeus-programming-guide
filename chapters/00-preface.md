@@ -27,4 +27,4 @@ Zeus V3 采用 3D DRAM 近存架构。LDG 存放权重与 KV Cache，矩阵单�
 
 ## 适用范围 {.unnumbered}
 
-本版适用于 Zeus V3 单设备编程。硬件配置以配套产品规格为准，环境检查和 SDK 获取方式见[安装和检查环境](#setup-environment)，示例验证范围见[附录 D](#versions-and-examples)。文档问题可在[公开仓库的反馈入口](https://github.com/Xuanwen-Wang/triton-zeus-programming-guide/issues)报告，产品或客户环境问题请通过既有交付或技术支持渠道处理。
+本版适用于 Zeus V3 单设备编程。硬件配置以配套产品规格为准。运行示例前，按[安装和检查环境](#setup-environment)核对所用配置。示例验证范围见[附录 D](#versions-and-examples)。

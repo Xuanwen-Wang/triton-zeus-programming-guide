@@ -6,11 +6,11 @@
 
 ## 安装和检查环境 {#setup-environment}
 
-### 取得同版示例与配套 SDK {#example-download}
+### 取得同版示例 {#example-download}
 
-在支持附件的 PDF 阅读器中打开本指南，从附件面板保存 `Triton-Zeus-Examples-<版本>.zip`。解压后，命令从含 `examples/` 的目录运行。附件与封面版本一同构建。也可从[指南仓库](https://github.com/Xuanwen-Wang/triton-zeus-programming-guide)取得源码，按该版 `pdf-build.json` 核对示例文件的 SHA-256。使用和分发范围见[版权声明](#copyright)。
+在支持附件的 PDF 阅读器中打开本指南，从附件面板保存 `Triton-Zeus-Examples-<版本>.zip`。附件与封面版本一致。解压后，在含 `examples/` 的目录运行示例命令。使用和分发范围见[版权声明](#copyright)。
 
-通过北极雄芯的产品交付或技术支持渠道取得适用 Zeus V3 配置的 SDK、安装说明和配套清单。按同一份清单完成安装与后端准备，并记录下表项目。具体版本号随实际 SDK 交付。
+SDK 安装、组件版本和后端配置以产品随附的说明为准。运行示例前，按下表核对所用环境。
 
 | 配套项 | 需要核对的内容 |
 |---|---|
@@ -33,12 +33,16 @@ python examples/check_environment.py \
 
 `zeus_language_extension` 应为 `true`，表示已加载 Zeus 语言扩展。再检查 `executable`、模块 `origin` 和工具路径：`triton` 应为 Zeus 配套构建，`zecc` 与 `zeus-compiler` 应来自本次工具链。版本号相同但路径不同，仍可能是不同的源码或构建产物。
 
+::: {.keep}
+
 脚本默认收集导入位置和工具路径。准备使用 JIT 时，运行严格前置检查。
 
 ```bash
 python examples/check_environment.py --require-jit \
   > build/jit-environment.json
 ```
+
+:::
 
 `jit_prerequisites_ready=true` 表示 Zeus 语言扩展、`zecc_jit` 导入和设备运行时可用性检查均通过。任一前置检查失败时，严格模式返回非零。可用设备由 SDK 运行时报告，也可能是模拟器设备。实际后端随运行结果从 SDK 配置记录，kernel 执行通过本章向量加法结果确认。
 
@@ -211,7 +215,7 @@ add_bf16[(cores,)](
 首次运行直接使用本节的 Python 命令和 PyTorch 参考比较。SDK 已配置功能模拟时，同一个 JIT 入口会提交到模拟后端，无须另写模拟测试脚本；`--run-device` 本身不选择运行后端。
 :::
 
-宿主调用 `torch.zeus.synchronize(out.device)` 等待输出所属设备，然后在 CPU 逐项比较。设备 smoke test 固定为有限输入和 $\alpha=1$，容差为零。`--alpha` 可用于 CPU 参考的其他有限值。扩展设备用例时，应先确定 FP32 融合或分步乘加的数值契约，再定义容差。
+在读回前，用 `torch.zeus.synchronize(device)` 等待本次选择的设备，例如 `zeus:0`。设备 smoke test 固定为有限输入和 $\alpha=1$，容差为零。`--alpha` 可用于 CPU 参考的其他有限值。扩展设备用例时，应先确定 FP32 融合或分步乘加的数值契约，再定义容差。
 
 ### 宿主侧的数据与资源生命周期
 
@@ -227,10 +231,10 @@ from vector_add import make_inputs, reference, launch
 
 x_cpu, z_cpu = make_inputs(2500)
 expected = reference(x_cpu, z_cpu)
-x = x_cpu.to("zeus:0")
-z = z_cpu.to("zeus:0")
+device = torch.device("zeus:0")
+x, z = x_cpu.to(device), z_cpu.to(device)
 out = launch(x, z, block=1024, cores=2)
-torch.zeus.synchronize(out.device)
+torch.zeus.synchronize(device)
 actual = out.cpu()
 torch.testing.assert_close(
     actual, expected, rtol=0, atol=0

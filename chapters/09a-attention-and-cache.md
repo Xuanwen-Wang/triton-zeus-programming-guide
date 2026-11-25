@@ -195,7 +195,7 @@ tl.store(tl.advance(v_target, position), v_segment,
 
 ### 通过已有 helper 创建配套池
 
-以下调用片段使用算子库提供的 helper，演示如何保留 Host 逻辑数据并生成配套的 K/V 池。随机数在 CPU 生成，输入本身先转换为 BF16；后续数学参考使用同一份数据。
+以下片段使用算子库的 helper，在 `zeus:0` 建立 K/V 池。随机数在 CPU 生成并转换为 BF16，后续数学参考使用同一份数据。
 
 ```python
 import torch
@@ -205,30 +205,28 @@ from sgl_kernel_zeus_triton.common.gqa import (
     sgl_gqa_kv_cache_store_triton as cache,
 )
 
+device = torch.device("zeus:0")
 torch.manual_seed(7)
 k_host = torch.randn(2, 1024, 256).to(torch.bfloat16)
 v_host = torch.randn(2, 1024, 256).to(torch.bfloat16)
-pools = fa.fill_gqa_kv_pools(
-    4, 256, 256, k_host, v_host,
-)
+with torch.zeus.device(device):
+    pools = fa.fill_gqa_kv_pools(4, 256, 256, k_host, v_host)
 q_host = torch.randn(1, 16, 256).to(torch.bfloat16)
-q = q_host.to("zeus")
+q = q_host.to(device)
 ```
 
 `fill_gqa_kv_pools` 接受 K/V 都为 token-major 的 CPU 数据，内部把 V 转置，按相同 weight 格式打包并复制到 LDG。这是历史缓存的初始化；后续逐 token 更新使用前述分段 ST，而读取端的 `tl.load` 不会重新 pack 整个池。返回对象包含核对应的池描述符及保持其存储存活的对象。调用者应保留整个池 owner，直到所有引用它的执行完成；不能只取一个裸地址，然后丢弃拥有实际分配的对象。
 
-继续准备一次更新。此片段不负责框架页分配，它使用本章已经确定的页表和 slot。
+用本章确定的页表和 slot 准备一次更新。页表、K/V 输入与 Q 使用同一设备。接入框架时，如果调用方已经准备了 Q，可从 `q.device` 取得它所在的设备，例如 `zeus:1`。
 
 ```python
 k_new_host = torch.randn(1, 2, 256).to(torch.bfloat16)
 v_new_host = torch.randn(1, 2, 256).to(torch.bfloat16)
-slot = torch.tensor([645], dtype=torch.int32, device=q.device)
-table = torch.tensor([[3, 2]], dtype=torch.int32,
-                     device=q.device)
-lengths = torch.tensor([390], dtype=torch.int32,
-                       device=q.device)
-k_new = k_new_host.to(q.device)
-v_new = v_new_host.to(q.device)
+slot = torch.tensor([645], dtype=torch.int32, device=device)
+table = torch.tensor([[3, 2]], dtype=torch.int32, device=device)
+lengths = torch.tensor([390], dtype=torch.int32, device=device)
+k_new = k_new_host.to(device)
+v_new = v_new_host.to(device)
 cache.gqa_kv_cache_store(
     k_new, v_new,
     pools["k_pool"], pools["v_pool"], slot, 4, 256,
@@ -237,7 +235,7 @@ partial, lse = fa.gqa_flash_attn_partial(
     q, pools["k_pool"], pools["v_pool"], table, lengths,
     1.0 / 16.0, 4, 256,
 )
-torch.zeus.synchronize(q.device)
+torch.zeus.synchronize(device)
 ```
 
 更新和读取按同一执行流提交。若分到不同流，须在消费前等待写入完成。Host 参考先更新 `k_host[:,645,:]` 和 `v_host[:,645,:]`，再按页表读取。
@@ -245,7 +243,7 @@ torch.zeus.synchronize(q.device)
 这个兼容 helper 以未包装的核地址对象提交池参数，不能据此假定运行时已自动把它标为可写。若此前通过 `.cpu()` 或 `to_gdg()` 建立过 LocalMem 的线性视图缓存，调试读回前应在写入完成后明确使缓存失效。
 
 ```python
-torch.zeus.synchronize(q.device)
+torch.zeus.synchronize(device)
 pools["k_pool"].invalidate_cache()
 pools["v_pool"].invalidate_cache()
 ```
