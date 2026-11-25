@@ -73,7 +73,7 @@ def main():
                             (ROOT/"book.yaml").read_text(), re.MULTILINE)
     if not epoch_match:
         raise SystemExit("book.yaml must declare source-date-epoch for reproducible metadata")
-    result = subprocess.run([typst, "compile", "--root", str(ROOT),
+    result = subprocess.run([typst, "compile", "--root", str(ROOT), "--font-path", "assets/fonts",
                              "--creation-timestamp", epoch_match.group(1),
                              "build/guide.typ", str(output)],
                             cwd=ROOT, capture_output=True, text=True)
@@ -101,6 +101,7 @@ def main():
               ROOT / "scripts/build_guide.py"]
     inputs += chapter_paths + sorted(p for p in (ROOT / "assets").iterdir()
                                     if p.suffix in {".svg", ".png", ".jpg"})
+    inputs += sorted((ROOT / "assets/fonts").glob("*.ttf"))
     inputs += sorted((ROOT / "examples").glob("*.py"))
     if (ROOT / "validation-summary.json").is_file():
         inputs.append(ROOT / "validation-summary.json")

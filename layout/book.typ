@@ -63,40 +63,34 @@
   figure-prefix.get() + "." + str(n)
 })
 
-#page(margin: 0pt, fill: rgb("#102d42"), background:
-  image("/assets/cover-art-v005.png", width: 100%, height: 100%, fit: "cover"))[
-  #set par(justify: false, leading: 7pt, spacing: 0pt)
-  #set text(fill: white)
-  #place(top + left, dx: 25.4mm, dy: 21mm)[
-    #text(size: 16pt, weight: "bold")[北极雄芯]
-    #v(3mm)
-    #text(size: 10pt, tracking: 0.25pt, fill: rgb("#c1d8e4"))[Polar Bear Tech]
-  ]
-  #place(top + left, dx: 25.4mm, dy: 65mm)[
-    #block(width: 159mm)[
-      #text(size: 9pt, tracking: 1.6pt, fill: rgb("#91c9df"))[PROGRAMMING GUIDE]
-      #v(7mm)
-      #text(size: 43pt, weight: "bold")[Triton Zeus]
-      #v(6mm)
-      #text(size: 29pt, weight: "bold")[编程指南]
-      #v(8mm)
-      #text(size: 10pt, fill: rgb("#c1d8e4"))[$subtitle$]
-    ]
-  ]
-  #place(top + left, dx: 25.4mm, dy: 261mm)[
-    #block(width: 159mm)[
-      #line(length: 100%, stroke: 0.5pt + rgb("#52778b"))
-      #v(5mm)
-      #grid(columns: (1fr, auto), gutter: 20pt,
-        text(size: 13pt, weight: "bold")[$version$],
-        text(size: 10pt, fill: rgb("#c1d8e4"))[$date$],
-      )
-      #v(6mm)
-      #text(size: 9pt)[北极雄芯信息科技（西安）有限公司]
-      #v(2mm)
-      #text(size: 8.5pt, fill: rgb("#c1d8e4"), "Polar Bear Tech (Xi'an) Co., Ltd")
-    ]
-  ]
+#page(margin: 0pt, fill: rgb("#f4f0e5"))[
+  #let edge = 18mm
+  #let ink = rgb("#292822")
+  #let secondary = rgb("#57554c")
+  #let song = "Noto Serif CJK SC"
+  #let roman = "Cormorant Garamond"
+  #let left-at(x, y, body) = place(top + left, dx: x, dy: y, body)
+  #let right-at(y, body) = place(top + right, dx: -edge, dy: y, body)
+  #let center-at(y, body) = place(top + center, dy: y, body)
+  #let cover-rule = line(length: 210mm - 2 * edge, stroke: 0.5pt + rgb("#a79e8d"))
+  #set text(font: "Noto Sans CJK SC", size: 11pt, fill: ink)
+  #set par(justify: false, leading: 0.65em, spacing: 0pt)
+
+  #left-at(edge - 0.2mm, 15.6mm, text(font: song, size: 18.8pt, weight: "bold", tracking: 0.5pt)[北极雄芯])
+  #left-at(edge + 31.8mm, 17.7mm, text(font: roman, size: 13pt, weight: "semibold", tracking: 0.13pt, fill: secondary)[Polar Bear Tech])
+  #right-at(18.7mm, text(font: "FreeSans", size: 8.6pt, tracking: 1.25pt, fill: rgb("#8a4b33"))[PROGRAMMING GUIDE])
+  #left-at(edge, 28.8mm, cover-rule)
+
+  #center-at(33.5mm, image("/assets/cover-art-v005.png", width: 193mm, height: 144.75mm, fit: "contain"))
+  #center-at(184mm, text(font: roman, size: 66.5pt, weight: "medium", style: "italic", tracking: -0.65pt, fill: rgb("#583d2d"), guide-name))
+  #center-at(209mm, text(font: song, size: 39pt, weight: "bold", tracking: 2.25pt)[编程指南])
+  #center-at(230mm, text(size: 11.2pt, fill: secondary)[$subtitle$])
+
+  #left-at(edge, 266.2mm, cover-rule)
+  #left-at(edge, 272.6mm, text(size: 9.5pt, weight: "bold")[北极雄芯信息科技（西安）有限公司])
+  #left-at(edge, 278.2mm, text(font: "FreeSans", size: 9pt, fill: secondary, "Polar Bear Tech (Xi'an) Co., Ltd"))
+  #right-at(271.9mm, text(font: "Liberation Mono", size: 11.8pt, weight: "bold")[$version$])
+  #right-at(278.2mm, text(size: 9.4pt, fill: secondary)[$date$])
   #box(width: 1pt, height: 1pt)
 ]
 

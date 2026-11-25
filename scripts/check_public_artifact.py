@@ -2,6 +2,7 @@
 """Reject private work files and machine-specific data from the public tree."""
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -12,6 +13,10 @@ TOP = {"README.md", "OUTLINE.md", "CONTRIBUTING.md", "CHANGELOG.md", ".gitignore
        "book.yaml", "requirements-review.txt", "Triton-Zeus-Programming-Guide.pdf",
        "pdf-build.json", "validation-summary.json", "RELEASE-REVIEW.md"}
 DIRECTORIES = {"chapters", "assets", "examples", "layout", "scripts", "site", ".github"}
+COVER_FONTS = {
+    "assets/fonts/CormorantGaramond-MediumItalic.ttf": "432864a497463aab9cb5edd77291149969880763c7501b68a9f61af415adb17e",
+    "assets/fonts/CormorantGaramond-Semibold.ttf": "184fbdd536c3a199eb276230491da9633fe19a6429e59067924f90ecf14782d2",
+}
 PATTERNS = {
     "machine path": r"/(?:data|home|mnt)/[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+",
     "private host": r"\b(?:10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)\b",
@@ -55,6 +60,10 @@ def main():
         if name == "assets/cover-art-v005.png":
             if not data.startswith(b"\x89PNG\r\n\x1a\n"):
                 errors.append(f"Invalid PNG cover: {name}")
+            continue
+        if name in COVER_FONTS:
+            if hashlib.sha256(data).hexdigest() != COVER_FONTS[name]:
+                errors.append(f"Unexpected cover font contents: {name}")
             continue
         try:
             text = data.decode("utf-8")

@@ -6,7 +6,7 @@
 
 指南统一以 PDF 发布，可在浏览器或 PDF 阅读器中阅读，使用书签和文内链接导航。网站首页直接打开 PDF，原 HTML 章节页面已下线。
 
-正文位于 `chapters/`，`book.yaml` 管理版本、日期和章节顺序。示例程序位于 `examples/`，正文示意图由 `scripts/draw_*.py` 生成，可继续编辑。封面采用独立的近存计算主题插画，标题、公司名、版本与日期均由 Typst 排为矢量文字；[插画生成说明](assets/cover-art-v005.prompt.txt)与资产一同保留。
+正文位于 `chapters/`，`book.yaml` 管理版本、日期和章节顺序。示例程序位于 `examples/`，正文示意图由 `scripts/draw_*.py` 生成，可继续编辑。封面采用 3D DRAM 封装的铜版线刻插画，标题、公司名、版本与日期均由 Typst 排为矢量文字。[插画生成说明](assets/cover-art-v005.prompt.txt)
 
 ## 阅读路线
 
@@ -34,7 +34,7 @@ LDG 矩阵乘和 KV Cache 示例还需要配套的资源分配与 pack 接口，
 
 ## 构建 PDF 与发布目录
 
-PDF 使用 Pandoc **3.9.0.2**、Typst **0.14.2** 与 Python。所需字体为 Noto Sans CJK SC、Noto Sans Mono CJK SC 和 Liberation Mono；数学字体由 Typst 提供。Python 渲染与 PDF 依赖见 `requirements-review.txt`。
+PDF 使用 Pandoc **3.9.0.2**、Typst **0.14.2** 与 Python。系统字体需要 Noto Sans CJK SC、Noto Sans Mono CJK SC、Noto Serif CJK SC、Liberation Mono 和 FreeSans。封面使用的 Cormorant Garamond 随仓库提供，数学字体由 Typst 提供。Python 渲染与 PDF 依赖见 `requirements-review.txt`。
 
 ```bash
 python3 -m pip install -r requirements-review.txt

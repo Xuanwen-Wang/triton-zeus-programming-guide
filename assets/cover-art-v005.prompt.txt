@@ -1,38 +1,14 @@
-Cover artwork for Triton Zeus Programming Guide v0.0.5.
-Created with the built-in imagegen tool. The artwork is an abstract illustration,
-not a hardware diagram. All cover typography is typeset separately in Typst.
+Cover illustration for Triton Zeus Programming Guide v0.0.5.
+Generated with ImageGen. The original 1448 × 1086 RGBA image is placed on an
+ivory page. Typst sets the cover text separately.
 
-Generation prompt:
-Use case: stylized-concept. Asset type: full-bleed A4 portrait cover background
-for a premium professional semiconductor programming manual, Triton Zeus by
-Polar Bear Tech. Create a sophisticated editorial 3D artwork, not a mockup of a
-book. Portrait aspect ratio about 1:1.414, high resolution suitable for a printed
-cover. Subject: an elegant architectural sculpture evoking near-memory computing
-and stacked 3D DRAM: precisely layered thin sapphire-blue and brushed-silver
-plates, fine vertical interconnect pins, and a finely patterned compute plane.
-It is abstract art, not a literal hardware block diagram. One coherent sculptural
-composition occupies the lower middle and right half, approximately y=43% to
-83%, with a strong diagonal perspective and refined shallow shadows. Background
-deep midnight navy #102d42, smooth with subtle atmospheric blue depth; restrained
-ice-cyan rim lighting, no neon glow. Upper 42% remains clean and calm dark navy
-for later vector typesetting of the book title; bottom 12% also clean dark navy
-for company and version metadata. Keep meaningful margins around the sculpture.
-Premium engineering publisher art direction: striking, precise, restrained,
-contemporary, beautifully crafted material detail, confident contrast, minimal
-clutter. No text, no letters, no numerals, no logos, no watermarks, no people, no
-decorative graphs, no generic floating icons, no circuit-board spaghetti, no fake
-labels. Do not render a physical book or page shadow. Return only the complete
-flat cover artwork.
+Generation prompt
+Use case: illustration-story. Original two-ink technical intaglio illustration for an elegant contemporary engineering monograph, cut out on genuine transparent alpha for typesetting on warm ivory paper. Landscape 4:3, high native detail. Create an exceptional copperplate print from the point of view of an experienced book illustrator. The print must work at small scale: a strong asymmetrical silhouette, sparse expressive strokes on the top planes, decisive dark side planes, and carefully chosen areas of fine engraved hatching. Use warm black/very deep espresso as the primary ink and muted burnt copper as a sparing spot ink on a few cut faces and bond details. All open paper highlights and the surrounding field are transparent.
 
-Refinement prompt:
-Prepare a high-resolution print master of this exact cover artwork. Preserve
-the entire existing composition, camera perspective, object placement, dark navy
-background, sapphire and brushed-silver plates, all negative space, and restrained
-lighting. Render at 2400 by 3392 pixels if supported, or the highest supported
-portrait resolution for an A4 print cover. Improve fine material and pin details
-and edge clarity only. Do not change the composition, crop, or color palette.
-Do not add any text, typography, logo, border, watermark, book mockup or additional
-objects. This is the final unlettered cover illustration; text will be placed
-separately in the PDF as vectors.
+Show ONE original axonometric technical plate of stacked 3D DRAM: a broad, shallow square memory stack on a clearly wider, thin stepped package substrate. Depict four paper-thin silicon dies. The lower dies are bonded together, and the upper die floats just a modest distance directly over them in an analytical exploded view. On the exposed top plane, four distinct rectangular memory-bank fields are engraved with disciplined fine lines and small quiet margins so it reads as a real semiconductor die. The front edge of the compact stack reveals a slim cut through the strata, with a few subtle vertical through-silicon via sections in copper, engraved INSIDE the section. Let the substrate project gracefully around the base. A small, tapering pool of engraved shadow grounds the construction. Three-quarter axonometry with the long axis slightly diagonal; see both front and right side. Fit the entire silhouette including the shadow within a thin transparent margin. Balanced like a beautiful museum print; precision of a technical plate, warmth and irregular variation of a hand-pulled etching. No extra panels or detail insets, no external copper wiring, dense dot fields or repetitive pillars. No labels, callouts, dimensions, arrows, letters, numbers, captions, seals, registration marks, paper texture rectangle, border or typography. The background must be genuinely transparent, including open space around the silhouette.
 
-Actual returned image: 1055 x 1491 pixels. No artificial upsampling was applied.
+The cover typefaces include Cormorant Garamond. The bundled static instances
+use the upright 600 and italic 500 weights from the Google Fonts source below.
+They were produced with fontTools and are distributed under the accompanying
+SIL Open Font License in assets/fonts/OFL.txt.
+https://github.com/google/fonts/tree/83c62e30d87daa70216dab6b984d00d20d96d585/ofl/cormorantgaramond
