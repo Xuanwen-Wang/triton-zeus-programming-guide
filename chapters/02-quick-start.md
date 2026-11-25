@@ -97,7 +97,9 @@ start = core_id * quotient + tl.minimum(core_id, remainder)
 
 在 $N=2500$ 时，`total_blocks=3`，`quotient=1`，`remainder=1`。编号较小的核额外获得一个 tile，因此核 0 从 tile 0 开始处理两个 tile，核 1 从 tile 2 开始处理一个 tile。两核的有效输出区间分别是 `[0,2048)` 和 `[2048,2500)`，没有重叠，也没有遗漏。
 
-这里的 `core_id` 对应本例选用的 Zeus 核映射。启动 grid、`CORE_NUM` 以及编译产物中的参与核数需要相符。不要把 grid 改成 tile 总数，同时仍保留按核划分的循环；那会使逻辑任务分配与启动方式不一致。更完整的推导见[Kernel 启动与程序实例](#kernel-launch)。
+::: {.caution}
+本例使用 `grid=(CORE_NUM,)`，`CORE_NUM=2` 表示两个参与核。三个 tile 由核内循环处理，不能沿用 GPU 的 `grid=(total_blocks,)`。完整推导见[编程模型](#kernel-launch)。
+:::
 
 ### 用块指针描述一维数据
 
@@ -183,12 +185,17 @@ add_bf16[(cores,)](
 
 `zeus_enable_jit=True` 允许在所选模式需要时进行编译；实际采用 JIT、AOT 或 hybrid，由运行时模式配置决定。该选项不会把 AOT 模式扩大为允许即时编译。它属于 Zeus 运行时适配层，不是 kernel 的数值参数；`BLOCK` 和 `CORE_NUM` 则是 kernel 的特化常量。
 
+::: {.tip}
+首次运行直接使用本节的 Python 命令和 PyTorch 参考比较。SDK 已配置功能模拟时，同一个 JIT 入口会提交到模拟后端，无须另写模拟测试脚本；`--run-device` 本身不选择运行后端。
+:::
+
 宿主在读取结果前调用 `torch.zeus.synchronize()`，随后把输出复制回 CPU，与相同 BF16 输入产生的参考结果比较。默认的有限输入和 $\alpha=1$ 使用 `rtol=0`、`atol=0` 的严格比较。通过时结果记录含有 `execution="zeus_runtime"`、`exact_match=true` 和 `max_abs=0.0`。`zeus_runtime` 表示调用经过设备运行时，并不表示一定在物理硬件上执行；保存运行输出时同时记录 SDK 后端。
 
 ### 宿主侧的数据与资源生命周期
 
 完整示例的宿主执行顺序如下：先在 CPU 上创建 BF16 输入和参考结果，再导入设备后端，将输入传输到目标设备；随后分配独立输出，提交 kernel，等待设备工作完成，最后读回并比较。
 
+::: {.keep}
 下面片段可在 `examples/` 目录中使用，调用随书已经定义的封装，而不重复编写 kernel：
 
 ```python
@@ -207,6 +214,7 @@ torch.testing.assert_close(
     actual, expected, rtol=0, atol=0
 )
 ```
+:::
 
 输入和输出对象在同步前都保持存活。读取 `actual` 之后，宿主即可使用比较结果。后续为提高吞吐而缩小同步范围时，仍要保留相同的生产消费关系，不能因为删除显式等待而允许提前覆盖输入或释放工作区。
 

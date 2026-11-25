@@ -29,11 +29,27 @@
   grid(columns: (1fr, auto), text("Copyright © $copyright-year$ Polar Bear Tech (Xi'an) Co., Ltd."), counter(page).display(pattern))
 }
 
-#let guide-note(body) = block(
-  width: 100%, inset: (x: 10pt, y: 8pt),
-  fill: rgb("#f4f7fa"), stroke: (left: 2pt + navy),
-  above: 13pt, below: 13pt, breakable: true,
-)[#set text(size: 9.5pt); #set par(leading: 8pt, spacing: 10pt); #body]
+#let guide-callout(kind, body) = {
+  let style = (
+    caution: (title: "注意", ink: rgb("#ad640f"), fill: rgb("#fff6e8")),
+    tip: (title: "提示", ink: rgb("#167d83"), fill: rgb("#edf8f6")),
+    note: (title: "注解", ink: rgb("#376f9f"), fill: rgb("#eef4fb")),
+  ).at(kind)
+  block(width: 100%, inset: 0pt, radius: 3pt, clip: true,
+    fill: style.fill, stroke: 0.65pt + style.ink,
+    above: 14pt, below: 14pt, breakable: false,
+  )[
+    #set par(justify: false, leading: 7.8pt, spacing: 7pt)
+    #set text(size: 9.5pt)
+    #set list(spacing: 6pt)
+    #set enum(spacing: 6pt)
+    #stack(dir: ttb, spacing: 0pt,
+      block(width: 100%, inset: (x: 11pt, y: 5pt), fill: style.ink,
+        text(size: 10pt, weight: "bold", fill: white, style.title + "：")),
+      block(width: 100%, inset: (x: 11pt, y: 9pt), body),
+    )
+  ]
+}
 
 #show link: set text(fill: teal)
 #show raw: set text(font: ("Liberation Mono", "Noto Sans Mono CJK SC"), size: 9.2pt, fill: black)

@@ -2,7 +2,7 @@
 
 ## A API 与数据类型支持表 {#api-support .unnumbered}
 
-本附录按接口、类型和配置汇总正文的适用范围。基础工作集覆盖本书算例使用的计算方式；专用接口带有独立的输入域或资源要求；未列入工作集的接口需要另行确认用途与配套条件。完整签名、参数说明和错误示例见[语言 API 参考](#api-reference)。
+本附录按接口、类型和配置汇总正文的适用范围。基础工作集覆盖本书算例使用的计算方式；专用接口带有独立的输入域或资源要求；未列入工作集的接口需要另行确认用途与配套条件。通用语法见[数据类型与语言规则](#language-and-api)，平台特有签名和参数组合见[Zeus 编程接口](#api-reference)。
 
 ### A.1 基础工作集 {.unnumbered}
 
@@ -22,19 +22,18 @@ Table: 基础 API 工作集
 
 表中的名称默认属于 `triton.language`，以 `tl` 为别名。语言层的数据类型和广播规则见[数据类型与语言规则](#language-and-api)。Softmax 等专用操作使用 `tl.zeus`；执行提示由 `triton.backends.triton_shared.language` 提供，正文记为 `ztl`。启动时的 `zeus_mode` 等关键字属于宿主适配器，不是设备语言函数。
 
-| 开发问题 | 查阅的 API 条目 |
+| 开发问题 | 查阅位置 |
 |---|---|
-| 计算本实例负责的地址 | [program_id](#api-program-id)、[arange](#api-arange)、[cdiv](#api-cdiv) |
-| 创建累加器或常量块 | [full、zeros](#api-full) |
-| 保护普通指针的尾块 | [load](#api-load)、[store](#api-store) |
-| 描述矩形窗口和推进 | [make_block_ptr](#api-block-ptr)、[advance](#api-advance) |
-| 对齐逐行或逐列参数 | [broadcast](#api-broadcast)、[expand_dims](#api-expand-dims) |
-| 改变视图形状或轴序 | [reshape](#api-reshape)、[trans、permute](#api-trans) |
-| 显式限定精度边界 | [cast、tensor.to](#api-cast) |
-| 条件选择与截限 | [where](#api-where)、[maximum、minimum](#api-minimum-maximum) |
-| 统计与归一化 | [sum](#api-sum)、[max](#api-max)、[min](#api-min)、[rsqrt](#api-rsqrt) |
-| 分块矩阵乘 | [dot](#api-dot) |
-| 编译期配置检查 | [static_assert、static_print](#api-static-check) |
+| 分配核与遍历逻辑 tile | [Kernel 启动与程序实例](#kernel-launch) |
+| 普通索引、块指针与边界 | [张量、指针与访存](#memory-api) |
+| 广播、变换、类型和通用语法 | [数据类型与语言规则](#language-and-api) |
+| 装载 LDG 权重、scale 与缓存 | [Zeus load](#api-load) |
+| LW 布局写入与原样 ST | [Zeus store](#api-store) |
+| 矩阵计算的 Zeus 约束 | [dot](#api-dot) |
+| 专用 Softmax 与数学接口 | [Zeus 计算扩展](#api-zeus-extensions) |
+| 多 VP/DT 与独立操作并行 | [执行单元提示](#api-executor-hint)、[kernel 策略](#api-kernel-hint) |
+| 提前退出与输出状态 | [early_exit_if](#api-early-exit) |
+| 运行时参数与编译期检查 | [控制流与特化](#control-and-extensions) |
 
 Table: 按开发问题检索接口
 
@@ -64,9 +63,9 @@ INT4 的完整最小实例与布局见[量化矩阵乘与 UScale](#quantized-mat
 |---|---|---|
 | `vp_hint`、`dt_hint` | 目标操作可对应执行单元 | 局部精确策略或自动策略 |
 | `parallel_executor_hint` | kernel 顶层标记 | 开启独立操作并行分析 |
-| `double_buffer_hint` | kernel 顶层标记 | 实验性分析，需额外验证 |
-| `softmax` | FP32 tile 与合法归约轴 | 本书案例为 `[1,1024]` 行块 |
-| `early_exit_if` | 单元素 FP32 条件 | 后续输出可能保持原值 |
+| `double_buffer_hint` | kernel 顶层标记 | 实验性、不完善，暂不推荐使用 |
+| `softmax` | FP32/BF16，rank 1–4 | 最内维归约，前导维均为 1 |
+| `early_exit_if` | 单元素 FP32 整数标志，推荐 0/1 | 顶层调用；后续输出保持原值 |
 | `exp_with_lut` | FP32 输入与完整系数表 | 调用方负责系数精度 |
 | `sigmoid_with_exp_lut` | FP32 输入与两组表参数 | 按指定 exp 表构造路径 |
 | `positive_normal_reciprocal` | 正、有限、正常 FP32 | 调用方负责近似误差界 |
@@ -140,7 +139,7 @@ zecc --compile-only-zbin \
 | `--num-dt=1` | 单 DT 请求 | 验证实际拆分与搬运收益 |
 | `--enable-parallel-executor` | 关闭 | 存在可证明独立的工作 |
 | `--parallel-executor-width` | 0，由硬件上限约束 | 核对资源及编译器接口 |
-| `--enable-double-buffer` | 关闭 | 实验性，验证别名与资源压力 |
+| `--enable-double-buffer` | 关闭 | 实验性、不完善，暂不推荐使用 |
 | `--enable-loop-scheduling` | 关闭 | 保持循环依赖与数学语义 |
 | `--rsqrt-scsq=1` | 使用该编码的迭代配置 | 同时复核精度和性能 |
 
@@ -276,6 +275,19 @@ DT、外部搬运与 L2 Buffer 是不同概念。L2 Buffer 不等同于 PE 内�
 ## D 版本记录与示例索引 {#versions-and-examples .unnumbered}
 
 ### D.1 文档版本 {.unnumbered}
+
+#### v0.0.6 修订稿 {.unnumbered}
+
+更新日期：2026-11-25。
+
+- 硬件章节：补充 GDG、LDG 的单组、单核及整设备设计容量，并区分物理容量与运行时可分配空间；GDG 与 L2 Buffer–LDG 读写采用 51.2 GB/s 口径。
+- LDG 带宽：分别说明 Zeus V3 的 15 credit / 23 拍模型和未来 Zeus V3 PRO 的两拍 miniblock 模型，移除 WL1 到 PE 端口容量叠加项。
+- Zeus 编程接口：替换通用语言 API 罗列，集中说明特殊 load/store、量化与分页参数、专用计算、执行提示和提前退出约束。
+- 性能与实例：将自动双缓冲标为实验性、不完善、暂不推荐；说明在 kernel 中显式组织预取、双工作区及复用依赖的方法。
+- 量化与缓存：明确静态权重和 scale 在 launch 前完成布局准备、LDG 写入及同步；补充动态 KV 的 LW 布局写入与分段 ST 路径。
+- 全书版式：加入“注意、提示、注解”三类彩色框，突出 Grid、LDG 参数 ABI、数据准备和迁移约束；沿用仓库最新封面。
+
+本稿先完成第四章以外的修订，第四章正文保留上一版，待章节结构确认后统一修订和发行。
 
 #### v0.0.5 {.unnumbered}
 

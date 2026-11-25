@@ -148,6 +148,8 @@ $$
 
 LDG 是 Zeus 的近存 DRAM，可保存权重和 KV Cache，并通过专用通路参与矩阵运算。API 中的 `memory_type="weight"` 是一条具体读写路径的名字，不表示 LDG 只能保存静态模型权重。布局设计必须同时满足生产者写入和消费者读取。
 
+静态权重在模型加载阶段按消费者的布局预先打包，并连同配套 scale 写入 LDG；写入完成后才能启动读取它们的 kernel。后续 `tl.load` 按描述符访问已有物理数据，不会在每次装载时重新打包。Decode 新增的 K/V 则可以由更新 kernel 通过 LW 完成布局变换写入，或自行计算物理片段后用普通 ST 写入；两种方式都必须保留相邻 token，并在消费者读取前完成更新。
+
 对于 $C=A W^T$，A 为 `[M,K]`，W 为 `[N,K]`。W 的逻辑内层为 K，实际连续段由打包格式决定；读入 `[BLOCK_N,BLOCK_K]` 后通过逻辑转置参与 dot。对于 decode attention，QK 需要按 token 取 K 的完整 D 维，而 PV 需要沿 token 求和。普通 weight 路径因而可以把 K 保存为 `[R,D]`，V 保存为 `[D,R]`，使两个 dot 都采用各自的 weight 描述符。代价是新 token 的 K 是行写入，V 是列写入，更新方法必须随之改变。
 
 专用 `kcache/vcache` 路径使用自己的页表与布局契约，不能把普通 weight 路径的矩阵形状、偏移公式和指针表直接套用过去。选择路径后，打包器、更新 kernel 和读取 kernel 应当作为一组共同设计；切换其中一个而保留另两个，是缓存数据静默错位的常见原因。
@@ -184,6 +186,12 @@ LDG 是 Zeus 的近存 DRAM，可保存权重和 KV Cache，并通过专用通�
 
 顺序执行时，一个 tile 依次经历输入搬运、计算和输出写回。流水希望在 tile $i$ 计算时提前搬入 tile $i+1$，并在依赖允许时写回 tile $i-1$。允许重叠的前提是它们使用的资源与缓冲区不存在冲突，同时满足数据依赖。
 
+::: {.caution}
+`--enable-double-buffer` 与 `ztl.double_buffer_hint()` 启用的是同一套自动双缓冲分析与转换。
+该功能仍属实验性，实现尚不完善，本版暂不推荐使用。
+优化时优先在 kernel 中显式组织预取和缓冲生命周期，再核对生成命令与实际重叠。
+:::
+
 ![顺序执行与使用两个缓冲槽的流水](assets/performance-timeline.svg){width=100%}
 
 图中的 ping 与 pong 是两个交替使用的缓冲槽。槽位重新用于搬入新数据之前，上一轮使用它的计算必须已经完成；输出写回读取的缓冲也必须保持有效直到写回结束。“输入已到达”和“缓冲可重用”是不同条件，二者都需要满足。
@@ -215,44 +223,52 @@ $$
 
 这是教学模型。实际搬入和写回可能共享通路，缓冲容量和同步也可能限制并发。少量 tile 的启动与排空占比较高，双缓冲带来的收益未必明显。用这条式子判断可能的收益空间，再用真实时间线验证是否出现稳定重叠。
 
-### 有条件地启用双缓冲
+### 在 kernel 中显式组织预取
 
-编译器的双缓冲选项默认关闭，显式启用后才参与相应转换。它针对可识别的循环，不保证所有 kernel 都会改变。以下 ZECC 命令使用同一份 Matmul 源码，先生成基础策略的设备程序：
+先从原有 K 循环分出启动和排空，再在稳定段同时保留当前 A tile 与下一 A tile。下面沿用 [Matmul 实例](#matmul-example)的块指针 `ap/bp`、输出块起点 `m/n` 和块尺寸，展示可替换 K 循环的数据流片段。前提是 K>0；K=0 应由宿主按数学契约单独处理。它使用已有的 `tl.load`、`tl.advance` 和 `tl.dot`，不引入异步复制接口，也不是独立可运行示例。
 
-```bash
-mkdir -p build/gemm-base build/gemm-double-buffer
-gemm_flags="--num-vp=1 --num-dt=1"
-ZEUS_COMPILER_EXTRA_FLAGS="$gemm_flags" \
-zecc --compile-only-zbin \
-  -c examples/matmul.py -o build/gemm-base/matmul.zbin \
-  --kernel-name matmul_bf16 \
-  --signature 'a_ptr=*bf16' --signature 'w_ptr_list=*i64' \
-  --signature 'c_ptr=*bf16' \
-  --signature M=i32 --signature K=i32 --signature N=i32 \
-  --constant CORE_NUM=1 --constant BLOCK_M=128 \
-  --constant BLOCK_K=128 --constant BLOCK_N=128
+```python
+n_tiles = tl.cdiv(K, BLOCK_K)
+acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
+a_cur = tl.load(
+    tl.advance(ap, (m, 0)),
+    boundary_check=(0, 1), padding_option="zero",
+)
+for ki in range(n_tiles - 1):
+    k = ki * BLOCK_K
+    a_next = tl.load(
+        tl.advance(ap, (m, k + BLOCK_K)),
+        boundary_check=(0, 1), padding_option="zero",
+    )
+    w_cur = tl.load(
+        tl.advance(bp, (n, k)), memory_type="weight",
+        boundary_check=(0, 1), padding_option="zero",
+    )
+    acc += tl.dot(a_cur, tl.trans(w_cur))
+    a_cur = a_next
+k_last = (n_tiles - 1) * BLOCK_K
+w_last = tl.load(
+    tl.advance(bp, (n, k_last)), memory_type="weight",
+    boundary_check=(0, 1), padding_option="zero",
+)
+acc += tl.dot(a_cur, tl.trans(w_last))
 ```
 
-然后保持参数集合不变，仅增加双缓冲选项并使用另一个输出目录：
+第一次装载是启动段；循环中预取 A 的下一块、消费当前块并传递下一轮状态；循环外最后一次 dot 是排空段。只有一个 K 块时循环不执行，启动段的 A 直接参加最后一次 dot。两块及奇数块不需要额外补算，最后一个 K 尾块继续由真实 shape 与零填充保护。最终转换和 C 写回仍放在全部 K 累加之后。
 
-```bash
-ZEUS_COMPILER_EXTRA_FLAGS="$gemm_flags --enable-double-buffer" \
-zecc --compile-only-zbin \
-  -c examples/matmul.py \
-  -o build/gemm-double-buffer/matmul.zbin \
-  --kernel-name matmul_bf16 \
-  --signature 'a_ptr=*bf16' --signature 'w_ptr_list=*i64' \
-  --signature 'c_ptr=*bf16' \
-  --signature M=i32 --signature K=i32 --signature N=i32 \
-  --constant CORE_NUM=1 --constant BLOCK_M=128 \
-  --constant BLOCK_K=128 --constant BLOCK_N=128
-```
+这里显式表达了两份 A 值同时存活的关系，但 Python 变量名并不直接分配两个物理槽。生成结果应保留当前读者需要的数据，直到该读者结束后才复用其地址；下一轮装载也不能覆盖尚未完成计算或写回的缓冲。按前述工作集例子，A 的两份 32 KiB 状态加一个 64 KiB 累加器已占 128 KiB，其他描述符与临时量还需另计。
 
-这两条命令只编译，不执行算子。通过 Python JIT 比较时，在[Matmul 宿主封装](#matmul-example)的启动调用中分别设置 `zeus_compiler_extra_flags`，使用同一份 A、W 和 PyTorch 参考，并保留各自诊断目录。切换选项后重新确认实际特化，不能把不同配置的缓存产物混作同一次对照。
+::: {.note}
+把预取写在 dot 前面，或在源码中使用 `for`，都不保证搬运与计算自动重叠。
+应从生成命令确认装载、计算及缓冲复用依赖，再从轨迹确认不同阶段的实际交叠。
+源码只表达数据流；资源分配和调度仍由编译器完成。
+:::
 
-比较时首先确认候选实际形成了双缓冲，再检查正确性和各阶段重叠。双缓冲增加同时活跃的状态，可能使资源分配失败，或使其他优化机会变少。出现资源错误时，先检查 tile 和活跃缓冲的规模；出现输出错误时，保留原始失败用例，检查缓冲生命周期与同步，不能把删除同步当成性能优化。
+### 检查两个槽是否产生实际收益
 
-双缓冲的三个常见无收益原因可以分别排查。第一，循环未被识别，生成代码与基线没有相关差异；第二，确实形成两个槽，但搬入和计算仍受同一资源或依赖串行限制；第三，原有流水已充分重叠，关键路径受读取带宽限制，而新增预取没有减少读取量或缩短等待。第三种提示继续增加预取深度的空间有限；前两种仍需要检查转换条件和资源映射。
+先检查当前值与下一值的物理地址、生命周期及等待关系，再比较输入、参考和计时范围相同的结果。若缓冲仍被安全地复用为单槽，或者两个槽已保留而命令仍串行，不能仅凭源码中的预取称为有效双缓冲。出现资源错误时先缩小同时活跃的状态；出现数值错误时先检查最后一块、奇数轮及换槽位置，不能通过删除同步掩盖依赖。
+
+即使形成重叠，若关键路径仍是 LDG 读取、输出写回或其他共享资源，总时间也可能不降。此时继续增加预取深度会增加 L2 Buffer 压力，却不一定减少等待。分别观察启动、稳定和排空段，避免用长循环的稳定段收益推断只有一两个 K 块的调用。
 
 ## 执行单元并行与算子融合
 
@@ -299,6 +315,6 @@ GEMM 可按以下顺序推进；向量与归约先查分工和搬运，Attention
 1. 用规则 A/W/C 描述符完成单核、多 K 块的正确计算，确认权重打包与输出坐标。
 2. 计算主要工作集和尾块效率，选择少量 M/N/K tile 候选，排除容量明显不够或填充过大的组合。
 3. 检查 A/W 的重复装载，按实际瓶颈尝试跨 N 复用 A 或跨 M 复用 W，观察新增累加器的资源代价。
-4. 对合适的 K 循环尝试双缓冲，检查输入准备是否与 PE 计算重叠，以及换槽和排空是否正确。
+4. 对合适的 K 循环显式组织输入预取与两份缓冲状态，核对启动、换槽和排空，再用生成命令及轨迹确认是否与 PE 计算重叠。
 5. 若 epilogue 或独立归约成为瓶颈，再考虑融合和 Parallel-Executor；保留数学定义、输出和精度。
 6. 回到小 M、N 尾块、K 尾块与短循环，按有意义的 shape 区间选择配置。

@@ -1,6 +1,6 @@
 # Triton Zeus 编程指南
 
-面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Triton 语言接口、算子开发与性能优化。当前版本 **v0.0.5**，包括 14 章、附录 A–D、31 个语言 API 条目和 8 个完整 kernel 示例。
+面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Zeus 编程接口、算子开发与性能优化。当前工作稿 **v0.0.6**，包括 14 章、附录 A–D 和 8 个完整 kernel 示例。第四章结构尚待确认，公开 PDF 仍为 v0.0.5。
 
 **[在线阅读 / 下载 PDF](https://xuanwen-wang.github.io/triton-zeus-programming-guide/Triton-Zeus-Programming-Guide.pdf)** · [章节索引](OUTLINE.md) · [版本记录](CHANGELOG.md)
 
@@ -15,7 +15,7 @@
 | 第一次编写算子 | 第 2 章：环境检查、向量加法与运行 |
 | 理解 Zeus V3 | 第 3 章：执行单元、容量、算力与带宽 |
 | 使用权重和 KV Cache | 第 4 章：LDG 数据布局与访问 |
-| 查询语言接口 | 第 6、7 章及附录 A |
+| 查询语言规则与平台专用接口 | 第 6 章语言规则、第 7 章 Zeus 编程接口及附录 A |
 | 接入框架、调试与优化 | 第 8–10 章 |
 | 开发 Matmul、归一化、Attention | 第 11–13 章 |
 | 迁移已有 GPU Triton 算子 | 第 14 章 |

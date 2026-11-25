@@ -27,7 +27,9 @@ python examples/vector_add.py --numel 2500 --run-device
 
 ### 功能模拟与物理设备的运行时选择 {#runtime-backends}
 
-执行后端和编译模式是两个独立选择。`ZECC_KERNEL_MODE` 决定特化从 JIT 缓存还是 AOT bundle 获取；功能模拟或物理设备决定生成的 kernel 在哪里执行。选择 AOT 不会自动改成物理设备，选择 JIT 也不意味着在 CPU 上解释 kernel。
+::: {.note}
+执行后端与编译模式是两个独立选择。`ZECC_KERNEL_MODE` 决定使用 JIT、AOT 或 hybrid；SDK 后端决定 kernel 在功能模拟器还是物理设备上执行。选择 AOT 不会自动切到物理设备，选择 JIT 也不意味着在 CPU 上解释 kernel。
+:::
 
 配套 SDK 应在激活时配置 Python、native 库、编译器及执行后端。模拟运行时通过 `ZEUS_V3_BACKEND` 选择下表中的后端；路径使用 SDK 实际交付的位置，在首次 Zeus 内存分配和启动前设置。
 
@@ -573,7 +575,11 @@ python examples/vector_add.py --run-device
 
 Table: 参数 ABI 与资源契约
 
-未包装的 LocalMem 对象沿兼容的 `T_WEIGHT` 参数描述进入启动器。该描述包含每个核的 LDG 地址，kernel 的 `*i64` 形式参数对应地址表；kernel 先按 `program_id(0)` 取得本核地址，再构造元素指针。因此 `*i64` 在这里描述的是地址表元素，不代表真实权重或 KV cache 必须使用 INT64 数据类型。
+未包装的 LocalMem 对象沿兼容的 `T_WEIGHT` 参数描述进入启动器。该描述包含每个核的 LDG 地址，kernel 的 `*i64` 形式参数对应地址表；kernel 先按 `program_id(0)` 取得本核地址，再构造元素指针。
+
+::: {.caution}
+未包装 LocalMem 的 `*i64` 参数是各核地址表，不能直接当成权重元素指针。它也不表示权重 dtype 是 INT64。使用 `localmem_ptr` 会改变参数 ABI，必须同时采用对应的 kernel 签名和读写声明。
+:::
 
 `T_WEIGHT` 与 `memory_type="weight"` 保留了接口的历史命名。LDG 是承载权重和 KV cache 的 3D DRAM；实际张量还可能使用 `kcache`、`vcache` 等专用物理组织。内存分配类型、参数描述和访存模式必须与算子的布局契约一起选择，不能因为它们最终都涉及设备地址就混用。
 

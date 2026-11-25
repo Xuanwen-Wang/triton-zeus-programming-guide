@@ -31,9 +31,13 @@ function Div(div)
     local content = pandoc.write(pandoc.Pandoc(div.content), 'typst')
     return pandoc.RawBlock('typst', '#block(breakable: false)[\n' .. content .. '\n]')
   end
-  if FORMAT == 'typst' and div.classes:includes('note') then
-    local content = pandoc.write(pandoc.Pandoc(div.content), 'typst')
-    return pandoc.RawBlock('typst', '#guide-note[\n' .. content .. '\n]')
+  if FORMAT == 'typst' then
+    for _, kind in ipairs({'caution', 'tip', 'note'}) do
+      if div.classes:includes(kind) then
+        local content = pandoc.write(pandoc.Pandoc(div.content), 'typst')
+        return pandoc.RawBlock('typst', '#guide-callout("' .. kind .. '")[\n' .. content .. '\n]')
+      end
+    end
   end
 end
 

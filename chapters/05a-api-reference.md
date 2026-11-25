@@ -1,115 +1,42 @@
-# 语言 API 参考 {#api-reference}
+# Zeus 编程接口 {#api-reference}
 
-本章按开发顺序组织接口：先建立索引与 tile，再访问存储、变换形状、计算和归约，最后组织控制流与平台提示。查阅一个接口时，应同时确定输入 dtype、静态 tile shape、运行时有效范围以及输出归属。仅有函数名不足以描述一个可复用的调用契约。
+Zeus 在 Triton 的张量表达式上增加了专用存储路径、计算操作和执行策略。本章说明这些接口如何与 LDG 布局、量化参数和核内执行资源配合。索引、广播、类型转换和普通归约的通用规则见[数据类型与语言规则](#language-and-api)；LDG 的字节排列与资源准备见[LDG 数据布局与访问](#ldg-memory)。
 
-接口条目使用统一体例：**用途、调用形式、参数与语义、Zeus 使用约束、示例、常见错误与关联操作**。调用形式省略编译器内部的 `_semantic` 等参数；除专门标出的高级参数外，保留真实的公开名称与默认值。片段运行在 `@triton.jit` 函数体内，`tl` 指 `triton.language`；大写 tile 尺寸为 `tl.constexpr`，指针、长度和步长来自该函数的参数。完整宿主调用见[算子开发实例](#examples)。
+接口片段运行在 `@triton.jit` 函数中，使用以下两个入口。`tl.zeus` 提供专用计算；`ztl` 提供执行提示、提前退出及显式查表计算。调用形式省略编译器内部的 `_semantic` 参数，大写尺寸及策略参数在编译期确定。
 
-本章的“拒绝”表示该调用违反明确的接口条件，例如块指针同时传入 `mask`；“未列入基础使用范围”表示这里没有给出它的设备契约。两者不能混同。原子操作、GPU 专属异步指令、内联汇编和通信接口不属于本章的基础工作集；不能因为上游 Triton 中存在同名符号而直接采用。版本、能力范围和验证层级集中见[附录](#appendices)，后续条目只说明影响写法的条件。
+~~~python
+import triton
+import triton.language as tl
+from triton.backends.triton_shared import language as ztl
+~~~
 
-## 索引与张量创建 {#api-creation}
+## 接口与资源契约
 
-### program_id：取得程序实例编号 {#api-program-id}
+选择一个 Zeus 接口时，应先确定三件事：指针代表哪种资源、数据按什么格式组织、操作会产生什么效果。把地址转换成某种指针类型，只改变编译器对它的解释，不会分配 LDG、搬运数据或重新排列字节。
 
-**用途。** 为当前实例计算自己的输入和输出区间。编号用于任务分工，不能用作线程内的元素编号。
+| 入口 | 主要用途 | 调用前需要确定 |
+|---|---|---|
+| `tl.load` 的扩展参数 | LDG 矩阵、量化权重及 K/V | 布局、描述符及页组织 |
+| `tl.store` 的扩展参数 | LDG 原始传输或 LW 格式写入 | 目标分配、元素类型及写入区间 |
+| `tl.zeus` | 专用 Softmax、分段函数等 | 输入域、形状与数值误差 |
+| `ztl` 的执行提示 | 单操作拆分或独立工作调度 | 操作类型、依赖及资源容量 |
+| `ztl.early_exit_if` | 设备端跳过后续工作 | 标志值与输出保留语义 |
 
-```python
-tl.program_id(axis)
-```
+Table: Zeus 接口的使用前提
 
-**参数与语义。** `axis` 是编译期整数，前端接受 0、1、2。结果为该轴的标量实例编号。一个实例中的所有 tile 元素共享此编号，tile 内元素索引通常由 `tl.arange` 生成。
+本章给出可用于组织 kernel 的接口契约，不把模块中的全部符号视为可互换的算子库。未列出的接口不应仅凭同名函数直接替换已有实现；例如 RMSNorm 可按[归约实例](#rmsnorm-example)明确表达累加精度、归约长度和输出类型。原子操作、GPU 专属异步指令等也不能从上游 Triton 的接口列表直接推定为 Zeus 功能。
 
-**Zeus 使用约束。** 基础执行路径使用一维核数 grid 和 `axis=0`。任务数大于核数时，由每个实例循环处理多个 tile。宿主传入的核数、`CORE_NUM` 和编译产物核数必须一致；增大 grid 不会自动产生 GPU 式的海量 block 调度。多维参数的前端形式不等于已经定义了相应的物理核映射。
+::: {.note}
+`memory_type="weight"` 是历史保留的接口字符串，表示相应的 LDG 访问路径。LDG 可以承载权重、KV Cache 和 UScale；接口名称不限制其中的数据用途，也不替调用者完成格式转换。
+:::
 
-```python
-core = tl.program_id(0)
-tiles = tl.cdiv(N, BLOCK)
-for tile in range(core, tiles, CORE_NUM):
-    offsets = tile * BLOCK + tl.arange(0, BLOCK)
-    x = tl.load(x_ptr + offsets, offsets < N, other=0.0)
-    tl.store(y_ptr + offsets, x, offsets < N)
-```
+## LDG 装载接口 {#api-memory}
 
-**常见错误与关联操作。** 若所有实例都以零为 tile 起点，会重复写相同区间。若只写 `core * BLOCK` 而不循环，超过 `CORE_NUM * BLOCK` 的尾部不会处理。有关均衡分块与输出归属，见[编程模型](#programming-model)。
+### load：参数与合法组合 {#api-load}
 
-### arange：创建静态整数索引 {#api-arange}
+`tl.load` 保留 Triton 的普通指针规则，并增加 LDG 访问参数。公开调用形式为：
 
-**用途。** 建立 tile 内的连续坐标，用于地址、mask 和广播。
-
-```python
-tl.arange(start, end)
-```
-
-**参数与语义。** 返回半开区间 `[start,end)` 的一维 INT32 张量，形状为 `[end-start]`。两个端点必须在编译期确定，且 `end > start`；端点还须通过前端的 INT32 范围检查。`arange` 没有步长参数，步长通过结果乘法表达。
-
-**Zeus 使用约束。** Zeus 前端默认允许非 2 次幂长度。需要启用 2 次幂兼容检查时，在编译进程环境中设置：
-
-```bash
-export TRITON_BLOCK_SHAPE_POWER_OF_TWO=1
-```
-
-允许构造某个静态形状，不代表所有后续算子均接受该布局或容量。本书基础示例采用规则尺寸，改变为 96、192 等长度时仍需检查完整计算链。
-
-```python
-lane = tl.arange(0, BLOCK)
-even = 2 * lane
-offsets = start + even
-valid = offsets < N
-```
-
-`start` 是运行时起点时，应把它加在 `arange` 的结果上，而不是写进 `tl.arange(start, start + BLOCK)` 的端点。
-
-**常见错误与关联操作。** `tl.arange(0, N)` 在 `N` 是运行时参数时不能创建动态 tile。正确做法是保持 `BLOCK` 静态，再用 `offsets < N` 限定有效范围。二维坐标由两条一维索引配合 `expand_dims` 组合。
-
-### full 与 zeros：建立常量 tile {#api-full}
-
-**用途。** 初始化 accumulator、填充值或固定系数。
-
-```python
-tl.full(shape, value, dtype)
-tl.zeros(shape, dtype)
-```
-
-**参数与语义。** `shape` 是编译期整数元组，`dtype` 明确元素类型。`full` 把标量扩展到整个形状；`zeros` 等价于使用零初始化。返回的是 kernel 中的张量值，不是宿主设备内存分配接口。
-
-**Zeus 使用约束。** 初始化大小要计入 L2 Buffer 工作集，尤其是循环外持续存活的矩阵 accumulator。基础用法采用常量 `value` 和 FP32 累加。若填充值来自运行时标量，需同时满足相应的标量类型与转换输入域，不能把常量初始化的行为直接外推到任意运行时值。
-
-```python
-acc = tl.zeros((BLOCK_M, BLOCK_N), tl.float32)
-bias = tl.full((BLOCK_N,), 0.5, tl.float32)
-result = acc + bias[None, :]
-```
-
-**常见错误与关联操作。** 在 K 循环内部重新置零会丢失前面所有块的乘积。`zeros` 也不会给 `out_ptr` 指向的设备空间自动写零；只有 `tl.store` 才产生相应输出。需要保留原输出的累加，应先定义读写和别名契约。
-
-### cdiv：计算正整数块数 {#api-cdiv}
-
-**用途。** 计算覆盖有效长度所需的 tile 数。
-
-```python
-tl.cdiv(x, div)
-```
-
-**参数与语义。** 实现为 `(x + div - 1) // div`。对于非负整数 `x` 和正整数 `div`，结果为向上取整的商；标量得到标量，张量表达式按广播规则处理。
-
-**Zeus 使用约束。** 分块长度通常使用非负 i32 标量，tile 大小为正 constexpr。宿主应排除负长度、零除数以及中间加法溢出。更大输入应先确定地址与算术位宽，不能只扩大分配后继续沿用 i32 算术。
-
-```python
-tiles = tl.cdiv(N, BLOCK)
-base = tiles // CORE_NUM
-extra = tiles % CORE_NUM
-owned = base + (core < extra)
-first = core * base + tl.minimum(core, extra)
-```
-
-**常见错误与关联操作。** `N // BLOCK` 会漏掉非整块尾部；`cdiv` 只得到块数，不能保护最后一个 tile 的访存。仍须配合 `load/store` 的 mask 或块指针边界检查。
-
-## 指针与访存 {#api-memory}
-
-### load：从指针装载元素 {#api-load}
-
-**用途。** 将普通设备数据或指定存储路径中的 tile 读入计算表达式。
-
-```python
+~~~python
 tl.load(
     pointer, mask=None, other=None, boundary_check=(),
     padding_option="", cache_modifier="",
@@ -117,640 +44,503 @@ tl.load(
     memory_type="default", weight_dtype=None,
     ugroup=None, page_size=None, uscale=None,
 )
-```
+~~~
 
-**参数与语义。** `pointer` 可以是标量指针、指针张量或块指针。标量指针返回标量；指针张量返回相同广播形状的值张量；块指针返回 `block_shape` 对应的 tile。结果元素类型由指针决定。
+普通指针和指针张量使用 `mask` 与 `other`；块指针使用 `boundary_check` 和 `padding_option`，不能同时传入 `mask` 或 `other`。以下专用矩阵访问以 `tl.make_block_ptr` 建立的块指针为基础，描述的是逻辑矩阵；其物理字节仍须符合相应的 LDG 格式。
 
-普通指针使用 `mask` 指定可访问元素，`other` 转换为指针元素类型后填入未装载位置。指定 `other` 时必须同时指定 mask。块指针使用 `boundary_check` 与 `padding_option`；此时不能再传 mask 或 other。空填充选项不会给越界位置承诺一个可用于计算的值。
+| `memory_type` | 访问对象 | 扩展参数 |
+|---|---|---|
+| `"default"` | 普通设备数据 | 保持专用参数为空 |
+| `"weight"` | LDG 矩阵及量化权重 | 可配 `weight_dtype`、`ugroup`、`uscale` |
+| `"kcache"` | 专用 K 索引及 payload 布局 | 必须指定 `page_size` |
+| `"vcache"` | 专用 V 索引及 payload 布局 | 必须指定 `page_size` |
+| `"uscale"` | UScale 页描述路径 | 普通量化调用使用 `uscale=` 绑定 |
 
-**Zeus 使用约束。** 普通 GDG 数据采用 `memory_type="default"`。`"weight"` 是保留的接口字符串，用于 LDG 相关的权重访问路径；名称来自历史接口，不是将 LDG 限定为只存权重。`weight_dtype`、`ugroup`、`page_size`、`uscale` 参与专用格式、分组或量化路径，不应在普通 BF16 load 中试填。必须先有匹配的布局和资源封装。GPU 缓存修饰符及 `volatile` 也不能代替 Zeus 的依赖和同步规则。
+Table: load 的公开 memory_type 与参数配对
 
-专用 K/V 模式的页长、索引表与 payload 布局见[LDG 数据布局与访问](#ldg-memory)。普通 `weight` 布局承载 KV 与专用 `kcache/vcache` 是不同契约，不能交叉使用其描述符。
+`"uscale"` 不表示“把任意 scale 张量读出来再逐元素相乘”。量化 kernel 使用 `memory_type="weight"`，通过 `ugroup` 指定分组，通过可选的 `uscale` 指针绑定物理页。内部组合字符串不属于应用接口；不要自行拼写带冒号的 memory_type，也不要把 `"key"`、`"value"` 当成 `"kcache"`、`"vcache"` 的别名。
 
-独立 UScale 使用指向 16 KiB 对齐 LDG 页首的标量 `*bf16` 指针，且必须配合 `memory_type="weight"` 与显式 `ugroup`。整数地址、块指针或普通 GDG 系数张量不能直接替代它。相邻与独立 scale 的组织见[量化矩阵乘与 UScale](#quantized-matmul)。
+缓存修饰符与 `volatile` 沿用函数签名，不提供跨 stream 的完成顺序。读侧所依赖的搬运、LW 写入或 scale 更新必须先完成；所有资源的 owner 应持续存活到最后一次消费结束。
 
-```python
-offsets = start + tl.arange(0, BLOCK)
-valid = offsets < N
-x = tl.load(x_ptr + offsets, mask=valid, other=0.0)
-x32 = x.to(tl.float32)
-```
+### 普通 LDG 矩阵
 
-**常见错误与关联操作。** `tl.where(valid, tl.load(...), 0)` 会先形成装载，不能保护越界。mask 为假且未给出 other 的值，不应参与归约。若一个指针张量重复指向同一地址，读取的逻辑语义仍需与后端访问模式相容；不能把任意 gather 当成规则块访问。关联接口为 `make_block_ptr`、`advance` 和 `store`。
+矩阵乘 $A[M,K]B[K,N]$ 的右操作数在 LDG 接口中使用逻辑视图 $W[N,K]=B^T$。`shape`、`strides` 和 `offsets` 描述 W 的逻辑坐标，不能用于把已 pack 的 LDG 字节解释为普通行主序数组。
 
-### store：向有效输出区域写回 {#api-store}
+下面读取完整的 BF16 tile。`weight_ptr_list` 是运行时准备的每核 64 位地址表；`N`、`K` 和 tile 起点须与该分配一致。
 
-**用途。** 把计算值保存到普通输出或具有明确契约的存储路径。
+~~~python
+core = tl.program_id(0)
+address = tl.load(weight_ptr_list + core)
+base = address.to(tl.pointer_type(tl.bfloat16))
+w_desc = tl.make_block_ptr(
+    base, (N, K), (K, 1), (n0, k0),
+    (BLOCK_N, BLOCK_K), (1, 0),
+)
+w = tl.load(w_desc, memory_type="weight")
+~~~
 
-```python
+片段假定当前 tile 完整落在逻辑矩阵内。处理尾块时，需要同时满足描述符边界、pack 补齐和后续矩阵乘的形状要求；不能仅在 store 端增加 mask。多个独立 packed block 还须按它们各自的基址和完整形状建描述符，不能用一套 Dense stride 推断所有分块位置。
+
+`weight_dtype` 默认是 `None`，普通 BF16、FP8 或 INT8 路径由指针元素类型决定。当前非空值只接受 `"int4"`；传入 `"bf16"`、`"fp8"` 或 `"int8"` 不会选择对应格式，而会违反接口条件。
+
+### INT4、ugroup 与 UScale {#api-quantized-load}
+
+`weight_dtype="int4"` 表示右操作数使用 packed INT4 权重。它不会对一份浮点矩阵即时量化，也不会把 FP8 指针背后的每个字节自动转换为两个合法权重。应用必须先按约定产生 INT4 码、排列 nibble，并准备配套 scale。
+
+`ugroup` 表示沿收缩维 K 的量化分组长度，单位是逻辑权重元素。它必须与 pack 时的分组一致。改变 `ugroup` 会改变 scale 与权重的对应关系，不是只影响性能的 tile 选项。具体分组、页坐标和计算示例见[量化矩阵乘与 UScale](#quantized-matmul)。
+
+~~~python
+w = tl.load(
+    w4_desc, memory_type="weight",
+    weight_dtype="int4", ugroup=128,
+)
+c = tl.dot(a_fp8, tl.trans(w), out_dtype=tl.float32)
+~~~
+
+此处 `w4_desc` 使用逻辑 $[N,K]$ 视图及 FP8 E4M3FN 指针类型，物理内容按 INT4 格式组织；`a_fp8` 是配套的 FP8 E4M3FN 激活 tile。随书例固定 $M=4,K=128,N=256$，一个 K 组含 128 个元素。这里的类型组合不能推广为任意激活类型与 INT4 权重都可相乘。
+
+省略 `uscale` 时，量化路径按与权重相邻的布局寻找 scale。若 scale 独立存放，则把物理页首传入 `uscale`：
+
+~~~python
+scale_address = tl.load(scale_ptr_list + core)
+scale_base = scale_address.to(
+    tl.pointer_type(tl.bfloat16),
+)
+scale_page = scale_base + page_id * 8192
+
+w = tl.load(
+    w4_desc, memory_type="weight",
+    weight_dtype="int4", ugroup=128,
+    uscale=scale_page,
+)
+~~~
+
+`8192` 是一个 16 KiB 页中的 BF16 元素数。`scale_page` 必须是指向 LDG 页首的**标量 BF16 指针**，不能是整数地址、指针张量或块指针。weight 端必须是块指针，且调用须显式指定 `ugroup`。传入的页需要已经按 UScale 格式排列；普通 GDG 中的二维系数矩阵不符合此契约。
+
+::: {.caution}
+`uscale` 绑定的是 16 KiB 对齐的物理页，不是某个 scale 元素。页内定位由分组与矩阵坐标共同决定。把逻辑组号作为地址，或用普通系数张量替代物理页，即使元素类型相同，也会读取错误位置。
+:::
+
+UScale 也可用于带分组缩放的 FP8 权重：此时保留 `ugroup` 及必要的 `uscale`，省略 `weight_dtype`。是否使用 INT4 与是否使用分组 scale 是两个独立问题，不能把二者视为同一个开关。
+
+### 专用 K/V 装载与 page_size {#api-cache-load}
+
+专用 K/V load 通过索引组织定位 payload。描述符基址代表该核的专用索引表，不能换成普通软件页表，也不能直接换成已解析的 payload 地址。表的编码和页内排列见[专用 K/V 页与索引表](#ldg-memory)。
+
+`page_size` 是物理页可容纳的逻辑 token 数，必须显式给出不小于 128 的 2 次幂。它不等于当前有效序列长度，也不等于一次读取的计算 tile 长度。除 `"kcache"`、`"vcache"` 外，其他 memory_type 不接受该参数。
+
+下面固定 BF16、每头 128 维、物理页长 1024，一次读取 128 个 token。`k_index_base` 指向按此格式准备的索引表，`seq_start` 是当前 tile 的逻辑起点。
+
+~~~python
+k_desc = tl.make_block_ptr(
+    k_index_base, (1024, 128), (128, 1),
+    (seq_start, 0), (128, 128), (1, 0),
+)
+k_tile = tl.load(
+    k_desc, memory_type="kcache", page_size=1024,
+    boundary_check=(0, 1), padding_option="zero",
+)
+scores = tl.dot(q_tile, tl.trans(k_tile))
+~~~
+
+`page_size=1024` 与 `block_shape=(128,128)` 同时出现是正常的：前者选择页格式，后者选择一次计算的逻辑范围。用于 PV 的 V 描述符以 $[D,S]$ 解释 PE 右操作数；其物理排列仍是专用 V 格式，不能由普通 `pack(V.T)` 替代。
+
+::: {.caution}
+页容量和有效 token 数必须分别维护。K 的无效位置即使读成零，也可能在 Softmax 中产生非零概率。注意力还需显式处理有效长度与因果 mask；专用页访问不会自动替应用完成这些判断。
+:::
+
+普通 `memory_type="weight"` 承载 KV 的路径采用软件页表和普通 packed 池，是另一套完整契约。更换读取模式时，必须同时更换相应的资源组织，不能只改一处字符串。
+
+## LDG 写入接口 {#api-store}
+
+### store：原始传输与 LW 转换
+
+~~~python
 tl.store(
     pointer, value, mask=None, boundary_check=(),
     cache_modifier="", eviction_policy="",
     memory_type="default", store_mode="default",
     blocksize=None,
 )
-```
+~~~
 
-**参数与语义。** 普通指针张量把 `value` 和 mask 广播到指针的形状，并把值转换到指针元素类型；返回值不代表保存后的张量。块指针使用 `boundary_check`，不接受 mask。块写回的 tile shape 与元素类型必须匹配，因此基础写法在 store 前显式完成输出转换。
+`store_mode="default"` 保持普通存储语义；`store_mode="lw"` 请求从 L2 Buffer 中的逻辑矩阵写成对应的 LDG 物理排列。两种模式不能互相替代。
 
-**Zeus 使用约束。** 每个程序实例应拥有独立写入区间。对齐和物理写粒度还可能使逻辑相邻元素共享一个外部存储字；低精度的尾部和并发原地更新必须服从分配与独占写入契约。`store_mode` 和 `blocksize` 属于专用路径，普通输出保持默认值。
+| `memory_type` | `store_mode` | `blocksize` 与效果 |
+|---|---|---|
+| `"default"` | `"default"` | 不传；普通设备写入 |
+| `"weight"` | `"default"` | 不传；LDG 原始传输，不做 pack |
+| `"weight"` | `"lw"` | 必传；转换为普通 LDG 格式 |
+| `"kcache"` | `"lw"` | 必传；写专用 K payload |
+| `"vcache"` | `"lw"` | 必传；写专用 V payload |
 
-写入 LDG 时，LW 目的格式必须与后续读取方式一致；具体 K/V payload 的追加写入见[LDG 数据布局与访问](#ldg-memory)。改变 store 的模式字符串不会使旧分配自动变成新布局。
+Table: store 的合法模式组合
 
-```python
-y = y32.to(tl.bfloat16)
-tl.store(out_ptr + offsets, y, mask=offsets < N)
-```
+`"kcache"`、`"vcache"` 不接受默认 store 模式，`"default"` 不接受 LW 模式；store 不提供 `memory_type="uscale"`。默认模式传入 `blocksize` 也会被拒绝。更新 UScale 时，应按其物理页契约准备正确的字节与传输，不能另造一种 scale store 组合。
 
-**常见错误与关联操作。** 两个实例即使都满足 `offsets < N`，仍可能覆盖同一输出。输出 mask 也不能补救此前的输入越界。对块指针写 BF16 输出前，先把 FP32 accumulator 转成 BF16，避免元素类型不匹配。
+普通块 store 的 value shape 和元素类型应与目标块指针一致，类型转换在写入前显式完成。LW 进一步要求源与目的元素类型一致，只接受对应的 INT8、FP8 和 BF16 路径；FP16、FP32 和 INT4 不属于 LW 的输入类型。INT4 权重应使用预先打包的上传路径。
 
-### make_block_ptr：描述规则的矩形访问 {#api-block-ptr}
+### blocksize 与目标描述符 {#api-lw-store}
 
-**用途。** 将张量边界、步长、tile 起点和静态尺寸组合为块指针，使循环中的装载和推进更清楚。
+LW 的 `blocksize` 必须是不小于 128 的 2 次幂。它描述布局中的逻辑分组粒度；在专用 K/V 路径中，对应页的 token 容量。它不是字节数、16 KiB miniblock 的大小，也不是强制每次写入那么多行。
 
-```python
-tl.make_block_ptr(
-    base, shape, strides, offsets, block_shape, order,
+以下片段把一个完整 $[128,128]$ BF16 tile 写成普通 LDG 布局。`ldg_base` 来自该核的 LDG 地址表，`values` 是同形状、同元素类型的逻辑矩阵。
+
+~~~python
+dst = tl.make_block_ptr(
+    ldg_base, (128, 128), (128, 1),
+    (0, 0), (128, 128), (1, 0),
 )
-```
-
-**参数与语义。** `base` 是普通元素指针。`shape` 为完整张量的各维长度，`strides` 为元素步长，`offsets` 为 tile 起点，`block_shape` 为 tile 的静态形状，`order` 为维度编号的一个完整排列。五组维度信息必须具有相同长度。前端以 i64 处理 shape/stride，以 i32 处理偏移；静态 block shape 也须落在合法整数范围。
-
-**Zeus 使用约束。** 优先使用具有明确矩形边界的连续或规则 stride 数据。`order` 是访问描述，不会把输入重新排布成所写顺序，也不会消除布局转换代价。基础矩阵例采用二维块，LDG 权重使用逻辑 `[N,K]` 视图；其字节实际按 LDG 格式 pack，不能按普通行主序解释。
-
-```python
-block = tl.make_block_ptr(
-    base=x_ptr, shape=(M, N), strides=(N, 1),
-    offsets=(row0, col0),
-    block_shape=(BLOCK_M, BLOCK_N), order=(1, 0),
+tl.store(
+    dst, values, memory_type="weight",
+    store_mode="lw", blocksize=128,
 )
-x = tl.load(block, boundary_check=(0, 1),
-            padding_option="zero")
-```
+~~~
 
-**常见错误与关联操作。** 将 `shape` 写成 tile 大小，会使第二个及后续 tile 被误判越界。将字节数作为 stride，则会按元素大小重复缩放偏移。`order` 有重复轴或缺轴时不合法。尾部检查由使用该块的 load/store 完成，构造块指针本身不搬运数据。
+LW 的有效数据 tile 至少有两个维度；如有额外前导维，它们必须为 1。一个调用不能把多份独立矩阵藏在非单例前导维中，期望 LW 自动逐份选择分配。批量数据应逐个建立相应的目标视图。
 
-### advance：沿张量维度推进块指针 {#api-advance}
+LW 的目标必须能追溯到真实的 LDG 分配。类型转换和存储模式参数都不会创建这份分配，也不会将 GDG 指针变成合法的 LW 目的地。读写同一资源时，应分别建立读侧和写侧块指针，不要让同一块指针视图同时携带互相冲突的 weight 读取与 LW 写入模式。
 
-**用途。** 在保持 shape、stride 和 tile shape 不变时移动访问窗口。
+::: {.tip}
+先固定数据格式，再选择写入粒度。对完整矩阵更新检查读回值；对追加更新还要检查未写区域保持原值。只比较整页平均误差，容易遗漏占比很小的 token 写入错误。
+:::
 
-```python
-tl.advance(base, offsets)
-```
+### 直接追加 K/V payload
 
-**参数与语义。** `base` 是块指针；`offsets` 是与块 rank 一致的偏移元组。每项表示沿对应逻辑维度推进多少个元素。返回新块指针，原变量不会自动改变。
+专用 K/V 写端与读端的地址含义不同：LW 追加接收**已解析的 payload 页地址**，不再执行索引表查找。下面写入 BF16 的一个 token，页容量为 1024，head dimension 为 128。
 
-**Zeus 使用约束。** 推进后的块仍受完整 shape 约束。Matmul 的 A `[M,K]` 与 LDG 操作数的逻辑 W `[N,K]` 视图都沿第二维推进 K；若另一算法直接使用 B `[K,N]` 的存储描述，其推进方向会不同。先写清访存描述的轴，再决定推进向量。
-
-```python
-for k in range(tl.cdiv(K, BLOCK_K)):
-    a = tl.load(a_block, boundary_check=(0, 1),
-                padding_option="zero")
-    w = tl.load(w_block, boundary_check=(0, 1),
-                padding_option="zero", memory_type="weight")
-    acc += tl.dot(a, tl.trans(w))
-    a_block = tl.advance(a_block, (0, BLOCK_K))
-    w_block = tl.advance(w_block, (0, BLOCK_K))
-```
-
-**常见错误与关联操作。** 只调用 `tl.advance(block, ...)` 而不接收返回值，会反复读取相同窗口。以上轮已经推进的指针为基准，再增加 `k * BLOCK_K` 会累加错误；若始终以固定初始模板为基准，该绝对偏移写法合法。顺序遍历可选择每轮推进一个 tile，或从固定模板定位当前 tile，不能混用两种基准。
-
-## 形状与数据视图 {#api-shape}
-
-### broadcast 与 broadcast_to：扩展单例维度 {#api-broadcast}
-
-**用途。** 将行系数、通道系数或标量与目标 tile 对齐。
-
-```python
-tl.broadcast(input, other)
-tl.broadcast_to(input, *shape)
-```
-
-**参数与语义。** `broadcast` 返回一对已对齐的张量。`broadcast_to` 返回目标静态形状的一个张量，形状可写为元组或多个整数。两个维度必须相等或其中之一为 1；rank 不同时在较小 rank 的左侧补单例维度。
-
-**Zeus 使用约束。** 广播描述元素关系，不保证物理零开销。布局变化和后继执行单元可能需要物化或搬运。行/通道关系应在源码中显式保留，避免相同长度掩盖轴写错的问题。
-
-```python
-row_scale = tl.reshape(row_scale, (BLOCK_M, 1))
-scaled = x * tl.broadcast_to(
-    row_scale, (BLOCK_M, BLOCK_N)
+~~~python
+dst = tl.make_block_ptr(
+    payload_base, (1024, 128), (128, 1),
+    (token_offset, 0), (1, 128), (1, 0),
 )
-```
-
-**常见错误与关联操作。** `[M]` 与 `[M,N]` 直接广播时，长度 M 会尝试匹配最后一维 N，并不是按行缩放。正确的行缩放使用 `[M,1]`。当 M 恰好等于 N 时，这类错误尤其容易隐藏，测试应包含不相等的两维。
-
-### expand_dims 与 None 索引：插入单例轴 {#api-expand-dims}
-
-**用途。** 为广播明确行轴与列轴，不改变元素总数。
-
-```python
-tl.expand_dims(input, axis)
-```
-
-**参数与语义。** 在指定位置插入长度为 1 的维度；前端支持单个轴或轴序列。对一维 `r`，`r[:, None]` 形成 `[R,1]`；对一维 `c`，`c[None,:]` 形成 `[1,C]`。
-
-**Zeus 使用约束。** 这是静态形状操作，不能把运行时整数用作新轴的尺寸。它不负责分配宿主内存；后端可能根据后续广播与布局消除或物化相关视图。
-
-```python
-rows = tl.arange(0, BLOCK_M)
-cols = tl.arange(0, BLOCK_N)
-offsets = rows[:, None] * stride_m
-offsets = offsets + cols[None, :] * stride_n
-```
-
-**常见错误与关联操作。** 插入了错误轴仍可能得到可广播的张量，但生成错误地址。建议用一个 `[2,3]` 的逻辑矩阵逐个验证坐标，再扩大 tile。关联接口为 `broadcast_to`、`reshape` 与 `sum(keep_dims=True)`。
-
-### reshape 与 view：改变静态形状 {#api-reshape}
-
-**用途。** 合并或拆分逻辑维度，为后续运算组织 tile。
-
-```python
-tl.reshape(input, *shape, can_reorder=False)
-tl.view(input, *shape)
-```
-
-**参数与语义。** 目标形状必须在编译期确定且元素总数相同。`reshape` 默认保持元素顺序；`can_reorder=True` 允许更宽松的重排，不能用于依赖固定位置语义的索引。已弃用的 `view` 等价于允许重排的 reshape，因此不应把它当作默认 reshape 的同义写法；新代码明确使用 reshape。
-
-**Zeus 使用约束。** 逻辑等元素数还不足以保证物理布局可直接复用。对转置、切片或非连续中间结果进行 reshape，可能需要实际搬运；不满足可证明的布局条件时应调整访问或显式重排，不能仅切换接口名绕过诊断。
-
-```python
-flat = tl.arange(0, BLOCK_M * BLOCK_N)
-matrix = tl.reshape(flat, (BLOCK_M, BLOCK_N))
-row_sum = tl.sum(matrix.to(tl.float32), axis=1)
-```
-
-**常见错误与关联操作。** 把 `[M,N]` reshape 成 `[N,M]` 不等于转置。对于 `[0,1,2,3,4,5]`，reshape 为 `[2,3]` 的第一行为 `[0,1,2]`，再 reshape 为 `[3,2]` 的第一行是 `[0,1]`；转置后的第一行则是 `[0,3]`。需要轴交换时使用 `trans` 或 `permute`。
-
-### trans 与 permute：按轴置换元素视图 {#api-trans}
-
-**用途。** 交换矩阵的逻辑行列，或对更高 rank 的 tile 明确排列各轴。
-
-```python
-tl.trans(input, *dims)
-tl.permute(input, *dims)
-```
-
-**参数与语义。** 维度排列可作为元组或逐项参数。`trans` 不提供 dims 时交换最后两个轴；`permute` 显式给出完整排列。输出 shape 按同一排列重排，元素之间的对应关系由轴变换确定。
-
-**Zeus 使用约束。** Matmul 中 LDG 权重的逻辑 W `[N,K]` tile 使用 `tl.trans` 得到 B `[K,N]`。这不意味着宿主权重 buffer 变成了普通 `[K,N]` 张量，也不能据此取消 LDG pack 与资源要求。一般转置的物理实现由布局与消费者决定，不能假定总是免费。
-
-```python
-w_nk = tl.load(w_block, memory_type="weight",
-               boundary_check=(0, 1),
-               padding_option="zero")
-b_kn = tl.trans(w_nk)
-product = tl.dot(a_mk, b_kn)
-```
-
-**常见错误与关联操作。** 同时在地址构造中交换 stride、又对装载结果转置，可能把数据转置两次。先区分“源存储中的坐标”和“消费者看到的坐标”，再决定变换放在哪一层。
-
-## 类型、表达式与选择 {#api-elementwise}
-
-### cast 与 tensor.to：转换数值或位模式 {#api-cast}
-
-**用途。** 显式确定计算精度、输出舍入或编码解释。
-
-```python
-tl.cast(input, dtype, fp_downcast_rounding=None,
-        bitcast=False)
-input.to(dtype, fp_downcast_rounding=None, bitcast=False)
-```
-
-**参数与语义。** 普通转换保持 shape 并改变元素 dtype。浮点缩窄默认采用 `rtne`；`rtz` 表达朝零舍入。`fp_downcast_rounding` 只能用于浮点缩窄，不能附加到 FP32→INT32 或 BF16→FP32。`bitcast=True` 保留位模式，非指针类型必须具有相同位宽。
-
-**Zeus 使用约束。** 基础数值路径为 BF16 装载、FP32 计算、BF16 写回，最后一次缩窄采用默认 RTNE。显式 RTZ、特殊值和其他 dtype 的组合需满足对应转换路径，不能仅因前端接受参数就改变标准样例的数值契约。位重解释也不能制造有效的 LDG 分配或权重地址表。
-
-```python
-x32 = x.to(tl.float32)
-y32 = x32 * scale + bias
-y = y32.to(tl.bfloat16)
-```
-
-**常见错误与关联操作。** FP32 高 16 位截取是 BF16 截断参考，不是 RTNE。将负浮点转换到整数也不等价于向下取整；编写量化时先定义舍入与饱和，再选接口。转换位置应和参考实现逐项对应。
-
-### 算术运算符：逐元素计算与整数商余数 {#api-arithmetic}
-
-**用途。** 组合标准表达式，计算数值结果与索引。
-
-```python
-a + b
-a - b
-a * b
-a / b
-a // b
-a % b
-```
-
-**参数与语义。** 二元运算先做形状广播与类型提升。`/` 表达除法；两个整数的 `//` 在 Triton 张量表达式中使用向零截断的整数商，`%` 使用相应余数。负数时这与 Python 宿主的向下取整规则不同。比如设备整数 `-7 // 3` 为 `-2`，余数为 `-1`；宿主 Python 则为 `-3` 和 `2`。
-
-**Zeus 使用约束。** 数据路径优先显式提升为 FP32，索引保持非负整数，避免把宿主的负数算术约定带进地址计算。分母应排除零，索引加乘不得溢出。混合有符号与无符号商余数被前端拒绝，应先转换到明确的共同类型。
-
-```python
-x32 = x.to(tl.float32)
-y32 = z.to(tl.float32)
-value = x32 + alpha * y32
-tile = index // BLOCK
-lane = index % BLOCK
-```
-
-**常见错误与关联操作。** BF16 tile 加一个 Python `0.5` 不一定提升到 FP32；常量的类型提升规则与运行时 FP32 标量不同。要求 FP32 中间精度时显式 `.to(tl.float32)`。参见[数据类型与累加精度](#types-and-precision)。
-
-### 比较与逻辑组合：构造布尔 tile {#api-compare}
-
-**用途。** 创建边界 mask 和逐元素条件。
-
-```python
-a < b
-a <= b
-a == b
-a != b
-condition_a & condition_b
-condition_a | condition_b
-~condition_a
-```
-
-**参数与语义。** 比较按广播后的 shape 产生布尔结果。布尔张量使用 `&`、`|` 和 `~` 逐元素组合。组合多个比较时，为每个比较加括号，避免 Python 运算符优先级改变表达式。
-
-**Zeus 使用约束。** 访存边界通常由整数索引与长度比较形成。不要把一个多元素布尔 tile 当成宿主 `bool` 或单一运行时分支条件；它属于逐元素 mask 或 `where` 的条件。
-
-```python
-valid = (rows[:, None] < M) & (cols[None, :] < N)
-x = tl.load(x_ptr + offsets, mask=valid, other=0.0)
-```
-
-**常见错误与关联操作。** `rows < M & cols < N` 并不是所需的两个比较。Python 的 `and/or/not` 也不应代替逐元素逻辑。涉及 NaN 时，浮点比较还必须按算法约定处理；不能把有限输入的比较行为外推到特殊值。
-
-### where：逐元素选择已经合法的值 {#api-where}
-
-**用途。** 在两个形状相容的计算结果间逐元素选择。
-
-```python
-tl.where(condition, x, y)
-```
-
-**参数与语义。** 条件应为布尔值或布尔 tile，x/y 经类型提升和广播后形成同一结果形状。条件为真取 x，为假取 y。该操作不提供 Python 条件表达式那样的分支短路保证。
-
-**Zeus 使用约束。** 输入值必须已经可以安全计算；无效访存仍需由 load/store 的 mask 保护。若一个分支包含除法，应先构造安全分母，再选择结果，而不是期待 where 消除非法分支。
-
-```python
-safe_den = tl.where(den != 0.0, den, 1.0)
-quotient = num / safe_den
-result = tl.where(den != 0.0, quotient, 0.0)
-```
-
-**常见错误与关联操作。** `tl.where(mask, 1.0 / den, 0.0)` 不能证明除零从未发生。同理，where 不能替代输出初始化、核间同步或资源所有权检查。
-
-### maximum 与 minimum：逐元素截限 {#api-minimum-maximum}
-
-**用途。** 计算逐元素上下界，或对有限数据实现 clamp。
-
-```python
-tl.maximum(x, y, propagate_nan=tl.PropagateNan.NONE)
-tl.minimum(x, y, propagate_nan=tl.PropagateNan.NONE)
-```
-
-**参数与语义。** 两个输入广播到共同形状并做类型提升，每个位置返回较大或较小值。它们保持 tile 的元素数，与沿一个轴缩减元素数的 `tl.max/tl.min` 不同。NaN 传播选项属于数值契约。
-
-**Zeus 使用约束。** 本书的截限用法针对有限 FP32 值；对于 NaN、带符号零及精确传播模式，须使用相应转换/比较路径的定义。整数形式可用于非负块数和分工边界，但不能借此替代索引溢出检查。
-
-```python
-x32 = x.to(tl.float32)
-clipped = tl.minimum(tl.maximum(x32, -1.0), 1.0)
-```
-
-**常见错误与关联操作。** `tl.maximum(x, 0)` 不是一行的最大值；它只是逐元素截限。若要求一个 tile 的最大值，使用归约 `tl.max(x, axis=...)`。
-
-### abs：逐元素绝对值 {#api-abs}
-
-**用途。** 构造绝对误差、幅度或最大绝对值归约。
-
-```python
-tl.abs(x)
-```
-
-**参数与语义。** 返回与输入相同形状的绝对值。浮点路径用于数值幅度；整数最小负数在相同位宽中没有对应的正数，需要单独定义溢出处理。
-
-**Zeus 使用约束。** 常见用法是有限 FP32 tile。BF16 输入在误差统计或缩放计算前先提升为 FP32。计算 INT8/INT32 幅度时，不应直接假设最小负数可在原类型中表示为正。
-
-```python
-x32 = x.to(tl.float32)
-amax = tl.max(tl.abs(x32), axis=0)
-safe_amax = tl.maximum(amax, 1.0e-6)
-```
-
-**常见错误与关联操作。** 对误差做 abs 后还需要说明如何聚合、除以什么参考量。一个较小平均误差可能掩盖极少数大误差，精度诊断同时关注最大值和分布。
-
-## 归约、矩阵乘与数学函数 {#api-reduction-math}
-
-### sum：沿静态轴求和 {#api-sum}
-
-**用途。** 计算行和、平方和及分块的局部统计量。
-
-```python
-tl.sum(input, axis=None, keep_dims=False, dtype=None)
-```
-
-**参数与语义。** `axis` 指向当前 tile 的逻辑轴；`None` 表示归约所有维度。`keep_dims=True` 保留长度为 1 的被归约轴。指定 dtype 时先转换输入再求和。默认将不足 32 位的整数提升到相同有符号性的 32 位整数；浮点输入需要显式选择计算精度，不能依赖自动提升 BF16 或 FP16。
-
-**Zeus 使用约束。** 基础归约显式使用 FP32，归约轴和 tile shape 静态可知。它只归约当前 tile，既不跨多个 loop tile 自动累计，也不跨程序实例通信。较长行要在算法中定义块间累计；跨核归约另需完整同步与汇总路径。
-
-```python
-x32 = x.to(tl.float32)
-sum_sq = tl.sum(x32 * x32, axis=1, keep_dims=True)
-mean_sq = sum_sq / width
-y32 = x32 * tl.rsqrt(mean_sq + eps)
-```
-
-**常见错误与关联操作。** 输入尾部补零可以保持求和，但均值仍除以有效 `width`，不能除以填充后的 tile 宽度。加法树改变时浮点结合顺序也可能改变，因此参考计算需匹配累加类型与容差。
-
-### max：沿轴求最大值 {#api-max}
-
-**用途。** 计算每行最大值或最大绝对值，为稳定指数或量化缩放提供统计量。
-
-```python
-tl.max(
-    input, axis=None, return_indices=False,
-    return_indices_tie_break_left=True, keep_dims=False,
+tl.store(
+    dst, token, memory_type="kcache",
+    store_mode="lw", blocksize=1024,
 )
-```
+~~~
 
-**参数与语义。** 默认只返回值。结果 shape 移除归约轴，启用 keep_dims 时保留单例轴。若同时需要值和索引，可设 `return_indices=True`；平局结果由 tie-break 参数决定。
+`token` 的形状为 $[1,128]$，`token_offset` 应在 $[0,1024)$ 内；宿主在调用前验证此范围。目标页分配、未写部分的内容和 owner 生命周期都由调用者维护。下一页的追加需要重新选择 payload，并从页内位置零开始。
 
-**Zeus 使用约束。** 基础条目采用 FP32 的值归约与显式 axis。索引返回涉及多结果归约、平局及 NaN 规则，不在本条目的值归约实例范围。mask 无效位置应填入不可能胜出的下界，且至少存在一个有效元素。下例限定 FP32 输入位于 `[-10000,10000]`，使用有限哨兵。
+写 V 时，输入仍为 token-major 的 $[1,128]$，目标逻辑描述仍为 $[1024,128]$，改用独立 V payload 及 `memory_type="vcache"`。LW 完成对应的排列转换，不需要先对 token 做软件转置。
 
-```python
-x = tl.load(x_ptr + offsets, offsets < N,
-            other=-1.0e9)
-row_max = tl.max(x, axis=0)
-```
+::: {.caution}
+专用 K/V 的 load 接收索引表，LW store 接收 payload。两者即使使用同一个 memory_type 字符串，基址也不是同一种对象。不能把读侧索引表直接作为追加目标，否则会破坏后续寻址。
+:::
 
-数学上的最大值归约也可用负无穷作为单位元，但设备路径中的特殊值行为应单独验证，不能仅替换这个常量便扩大输入域。
+完整追加 kernel 及页边界检查见 `examples/append_kcache.py` 和 `examples/append_vcache.py`。普通页池的 token 追加则按[分页 KV Cache 与 Attention](#attention-cache)的 slot 和普通布局规则处理。
 
-**常见错误与关联操作。** 全负输入若用零填充，最大值会被尾部零污染。对空行则必须在宿主或控制流中单独处理，不能让“空集合最大值”意外进入归一化。
+## 专用计算与数值契约 {#api-zeus-extensions}
 
-### min：沿轴求最小值 {#api-min}
+### dot：LDG 右操作数与累加 {#api-dot}
 
-**用途。** 得到最小值及下界统计，或对一个 tile 做区间分析。
+矩阵乘继续使用 `tl.dot`，由编译器选择 PE 实现和内部 tile 参数。调用者描述逻辑矩阵及数值类型，不手动指定 PE 模式。
 
-```python
-tl.min(
-    input, axis=None, return_indices=False,
-    return_indices_tie_break_left=True, keep_dims=False,
-)
-```
+~~~python
+product = tl.dot(a, tl.trans(w), out_dtype=tl.float32)
+acc = acc + product
+~~~
 
-**参数与语义。** axis、keep_dims 和返回索引的规则与 max 对称。低精度浮点值归约会提升计算类型；为了让数值边界可见，推荐显式转换为 FP32。
+`a` 的形状为 $[M,K]$，`w` 是从 LDG 读取的逻辑 $[N,K]$ tile，结果为 $[M,N]$。代码中的转置表达数学方向，不表示宿主还需对 packed LDG 字节再次转置。K 循环每步沿 A 与 W 的第二维推进，并把同形状的部分结果加到循环外初始化的 accumulator。
 
-**Zeus 使用约束。** 对基础值归约使用静态 axis，尾部填入不会小于任一有效输入的上界，保证至少存在一个有效元素。下例同样限定 FP32 输入位于 `[-10000,10000]`。值加索引的返回形式不能仅根据这个例子外推。
+Zeus PE 没有通用的非零 C 输入端口。跨 K 块累加应写成上面的独立 FP32 加法，不使用非零第三参数来要求原生 `dot(a,b,c)`。FP32 accumulator 也不会恢复输入量化前的精度：BF16、FP8 或 INT4 的误差已进入乘法操作数。
 
-```python
-x = tl.load(x_ptr + offsets, offsets < N,
-            other=1.0e9)
-minimum = tl.min(x, axis=0)
-```
+`out_dtype` 是输出类型要求，不是任意混合 dtype 的许可。普通 BF16 矩阵乘与 FP8×INT4 量化矩阵乘分别采用[矩阵乘实例](#matmul-example)和[量化实例](#quantized-matmul)的类型、布局及 scale 契约。TF32 等其他设备的精度模式不能作为 Zeus 的通用选项套用。
 
-**常见错误与关联操作。** 全正数据用零填充会得到错误的零最小值。若后续要计算 `1 / minimum`，归约正确并不等于输入满足除法定义域；须独立检查零、符号和量级。
+### softmax：单行专用归约 {#api-zeus-softmax}
 
-### dot：块矩阵乘与外部累加 {#api-dot}
-
-**用途。** 表达矩阵乘的数学结构，由编译器映射到 PE 数据路径。
-
-```python
-tl.dot(
-    input, other, acc=None, input_precision=None,
-    allow_tf32=None, max_num_imprecise_acc=None,
-    out_dtype=tl.float32,
-)
-```
-
-**参数与语义。** 二维输入形状分别为 `[M,K]` 与 `[K,N]`，结果为 `[M,N]`。两输入的收缩维必须相等。`acc` 若提供，必须匹配输出 shape 和累加类型。前端还能描述批量形状，但本书基本 Matmul 使用二维 BF16 输入与 FP32 输出。
-
-**Zeus 使用约束。** 采用普通 `tl.dot(a,b)`，在 K 循环外建立 FP32 accumulator，并用外部加法累加每个块的结果。当前前端配置不承诺任意非零 dot accumulator 直接融合；不要未经核对把外部加法改成三参数 dot。`out_dtype=tl.bfloat16` 被前端拒绝，先得到 FP32 结果，再在最终输出边界缩窄。
-
-LDG 权重以逻辑 `[N,K]` tile 描述，实际字节由 LDG 格式组织；使用 `memory_type="weight"` 装载后 `tl.trans` 为 `[K,N]`。PE 模式和 minitile 由编译器选择。GPU TF32、Tensor Core 或手写 PE 模式参数不属于此基础调用。
-
-```python
-acc = tl.zeros((BLOCK_M, BLOCK_N), tl.float32)
-for k_tile in range(tl.cdiv(K, BLOCK_K)):
-    a = tl.load(a_block, boundary_check=(0, 1),
-                padding_option="zero")
-    w = tl.load(w_block, boundary_check=(0, 1),
-                padding_option="zero", memory_type="weight")
-    acc += tl.dot(a, tl.trans(w))
-    a_block = tl.advance(a_block, (0, BLOCK_K))
-    w_block = tl.advance(w_block, (0, BLOCK_K))
-out = acc.to(tl.bfloat16)
-```
-
-**常见错误与关联操作。** K 尾块要同时保护 A 和 W，不能只保护输出 M/N。普通 Tensor 指针不是 LDG 权重资源的通用替代。INT8 输入的 FP32 与 INT32 累加、FP8 编码及量化尺度均是独立契约，不能由 BF16 例子推导。
-
-### rsqrt：计算倒平方根 {#api-rsqrt}
-
-**用途。** 用于 RMSNorm 等算法中的归一化因子。
-
-```python
-tl.rsqrt(x)
-```
-
-**参数与语义。** 对每个元素计算倒平方根，结果保持输入形状。基础路径使用 FP32，算法应明确输入必须为正。
-
-**Zeus 使用约束。** 倒平方根涉及近似与迭代配置；`--rsqrt-scsq` 是相关编译参数，基础值为 1。改变配置会同时影响数值误差和执行行为，应作为一项独立实验记录。不要把扩展的 `positive_normal_rsqrt` 与普通接口视为同一契约：前者还有 LUT 与严格的正正常数输入域。
-
-```python
-x32 = x.to(tl.float32)
-mean_sq = tl.sum(x32 * x32, axis=0) / width
-inv_rms = tl.rsqrt(mean_sq + eps)
-y = x32 * inv_rms
-```
-
-**常见错误与关联操作。** `eps` 应加在平方均值之后；在 x 上先加 eps 会改变数学定义。小正数、接近零、很大输入和非有限值应分组验证，不能用随机正常数的平均误差替代边界分析。
-
-### exp：有限 FP32 输入的指数计算 {#api-exp}
-
-**用途。** 构造稳定指数、激活函数或概率计算的中间项。
-
-```python
-tl.exp(x)
-```
-
-**参数与语义。** 逐元素计算自然指数，shape 不变。基础用法将输入显式转换为 FP32。指数的大输入会放大相对误差或溢出，极小输入可能下溢。
-
-**Zeus 使用约束。** 普通 `tl.exp` 由平台数学路径完成。它与调用方提供表系数的 `ztl.exp_with_lut` 是两个不同入口；仅替换成自定义表不能继承普通接口的误差边界。下例用每行最大值平移来控制指数输入量级，要求每行非空并已正确处理尾部。
-
-```python
-x32 = x.to(tl.float32)
-row_max = tl.max(x32, axis=1, keep_dims=True)
-weights = tl.exp(x32 - row_max)
-den = tl.sum(weights, axis=1, keep_dims=True)
-probability = weights / den
-```
-
-**常见错误与关联操作。** 上例说明计算关系，不替代完整 Softmax 的 mask、特殊值和输出契约。若一行全部为无效填充，最大值平移可能形成无效算术；应在进入该路径前排除空行。
-
-## 控制流与编译期检查 {#api-control}
-
-### range 与 tl.range：组织运行时循环 {#api-range}
-
-**用途。** 在固定 tile shape 下遍历可变数量的块。
-
-```python
-range(start, end, step)
-tl.range(
-    arg1, arg2=None, step=None, num_stages=None,
-    loop_unroll_factor=None, disallow_acc_multi_buffer=False,
-    flatten=False, warp_specialize=False, disable_licm=False,
-)
-```
-
-**参数与语义。** 单参数形式从零到上界，双参数形式指定起点与终点，步长默认 1。在 JIT kernel 中，循环边界可以来自运行时整数；循环携带的张量形状与类型仍要在各次迭代保持一致。
-
-**Zeus 使用约束。** 基础分块优先使用普通 range，先确保正步长、有界迭代和输出归属。`tl.range` 的高级属性来自 Triton 前端，不能把 `num_stages`、`warp_specialize` 等直接解释为 Zeus 的双缓冲或执行单元数量。平台流水和并行通过对应的 Zeus 选项分析实现。
-
-```python
-acc = tl.full((), 0.0, tl.float32)
-for tile in range(tile_count):
-    offsets = tile * BLOCK + tl.arange(0, BLOCK)
-    x = tl.load(x_ptr + offsets, offsets < N, other=0.0)
-    acc += tl.sum(x.to(tl.float32), axis=0)
-```
-
-**常见错误与关联操作。** 在循环内部改变 tile 维度不是动态形状循环。循环次数可能为零时，循环后的每个值都必须有合法的初值。大范围展开会放大代码与资源占用，应和 `static_range` 区分。
-
-### static_range：展开小型静态循环 {#api-static-range}
-
-**用途。** 为少量、固定次数的操作生成编译期展开结构。
-
-```python
-tl.static_range(arg1, arg2=None, step=None)
-```
-
-**参数与语义。** 起点、终点与步长必须为 constexpr。它与 range 具有相同的半开区间计数方式，同时引导编译器积极展开循环。
-
-**Zeus 使用约束。** 适用于少量固定分支或小窗口计算。展开不自动提供并行，也不改变操作之间的依赖。展开次数较大时，会增加编译时间、指令体积和中间值的存活范围。
-
-```python
-acc = tl.zeros((BLOCK,), tl.float32)
-for part in tl.static_range(4):
-    offsets = part * BLOCK + tl.arange(0, BLOCK)
-    x = tl.load(x_ptr + offsets)
-    acc += x.to(tl.float32)
-```
-
-示例要求输入至少有 `4 * BLOCK` 个元素；若实际长度可变，应加入相应 mask，或改用运行时循环。
-
-**常见错误与关联操作。** 把运行时 `N` 传给 static_range 会违反编译期条件。用它替换所有循环也不是通用性能优化，应该先确认循环确实小且展开后的资源仍合适。
-
-### static_assert 与 static_print：检查特化配置 {#api-static-check}
-
-**用途。** 在编译阶段拒绝不合法的形状配置，并输出需要观察的静态信息。
-
-```python
-tl.static_assert(cond, msg="")
-tl.static_print(*values, sep=" ", end="\n",
-                file=None, flush=False)
-```
-
-**参数与语义。** static_assert 的条件必须在编译期能够求值，失败时终止该特化。static_print 观察编译期值，打印的是特化形成时的信息，不是每次设备运行的数据。
-
-**Zeus 使用约束。** 检查适合放在 kernel 开头，例如正 tile 大小、核数选择和两个静态维度的关系。它们不代替宿主对每次运行时指针、长度、dtype 与 stride 的检查。
-
-```python
-tl.static_assert(BLOCK > 0, "BLOCK must be positive")
-tl.static_assert(CORE_NUM == 1 or CORE_NUM == 2)
-tl.static_print("tile", BLOCK, "cores", CORE_NUM)
-```
-
-**常见错误与关联操作。** 命中编译缓存时未重新打印，不代表 kernel 未运行。`tl.static_assert(N > 0)` 不能检查普通运行时 N；此类条件应在宿主封装中使用普通检查。
-
-## Zeus 扩展 {#api-zeus-extensions}
-
-### softmax：沿一行完成稳定归一化 {#api-zeus-softmax}
-
-**用途。** 用一个专用操作表达稳定 Softmax，由编译器保留该操作所需的有效域与归一化关系。
-
-```python
+~~~python
 tl.zeus.softmax(x, axis=-1)
-```
+~~~
 
-**参数与语义。** `x` 为输入 tile，`axis` 是编译期归约轴，默认最后一维。数学上先减去该轴最大值，再计算指数并除以指数和。返回值保持输入 tile 的类型和形状；本书采用有限 FP32 输入与 FP32 输出。
+该接口计算数值稳定的 Softmax，输入与输出 shape、dtype 相同。Zeus 专用路径接受 FP32 或 BF16；rank 为 1 至 4，归约轴必须是最内维，其他前导维必须静态为 1，最内维长度必须静态为正。因此 $[1,N]$ 可以表示一行，$[M,N]$ 在 $M>1$ 时不能一次调用后期待独立处理 M 行。
 
-**Zeus 使用约束。** 完整示例使用 `[1,1024]` 静态行块、`axis=1`，每个有效行由一次操作完成。实际行宽通过块指针的 shape 传入，load 和 store 均给出边界维度。它不是将多次 tile softmax 结果简单拼接的跨块算法；一行超过该模板宽度时，应改用具有跨块状态的实现。
+下面延续随书 FP32 示例，一次处理一行，静态宽度为 1024。`row` 是有效行号，`width` 在 1 至 1024 之间，描述符保留真实的矩阵宽度。
 
-```python
+~~~python
+src = tl.make_block_ptr(
+    input_ptr, (rows, width), (width, 1),
+    (row, 0), (1, 1024), (1, 0),
+)
+dst = tl.make_block_ptr(
+    output_ptr, (rows, width), (width, 1),
+    (row, 0), (1, 1024), (1, 0),
+)
 x = tl.load(
-    input_block, boundary_check=(0, 1),
-    padding_option="zero",
+    src, boundary_check=(0, 1), padding_option="zero",
 )
 y = tl.zeus.softmax(x, axis=1)
-tl.store(output_block, y, boundary_check=(0, 1))
-```
+tl.store(dst, y, boundary_check=(0, 1))
+~~~
 
-片段中的两个块指针都使用真实的 `(rows, width)` 作为完整 shape，静态 block_shape 为 `(1,1024)`。专用 Softmax 路径与这套边界信息配合，处理当前行的有效范围；不要删掉真实 shape 后仅靠输出 store mask 修复分母。
+这个写法将真实边界交给专用归约路径；不要先把 source 的逻辑宽度也伪装成 1024，再期待算子猜出有效列数。完整 kernel 通过循环分配多行，不能把 `block_shape` 的第一维增大来代替该循环。
 
-**常见错误与关联操作。** 此处的补零不等价于普通 `max → exp → sum` 表达式的尾部策略。手动展开公式时，补零会参与指数和，必须另外排除无效列。验证专用接口时同时检查逐元素误差、行和与全负输入；仅检查输出没有越界不能证明归一化范围正确。完整算例见[算子开发实例](#examples)。
+::: {.caution}
+这里的零填充属于专用 Softmax 的描述符有效域契约。改写为普通 `max/exp/sum` 时，零填充列会参与归约；全负输入尤其容易出错。还应检查有效列行和、尾部保护及全负输入，不能只查越界。
+:::
 
-以下条目的 `ztl` 来自 `triton.backends.triton_shared.language`。扩展的价值在于表达平台专属意图；引入之前应保留对应标准写法的正确性基线。
+专用 Softmax 不是任意长度的跨 tile 在线归约。单行超过一个 tile 时，应使用具有显式状态更新的算法；其状态契约见下一节。`tile_softmax` 也不应仅凭相近的名称与本接口互换。
 
-### vp_hint 与 dt_hint：请求单个操作的拆分策略 {#api-executor-hint}
+### 在线 Softmax 状态更新 {#api-online-softmax}
 
-**用途。** 对产生某个值的逻辑操作指定局部执行单元策略。
+~~~python
+tl.zeus.fa2_online_softmax_update(
+    scores, m_state, l_state, axis=-1,
+)
+~~~
 
-```python
+该接口完成一次 FlashAttention 在线 Softmax 的状态更新。`scores` 必须是静态 FP32 矩阵 $[H,S]$，两维均为正；`m_state` 和 `l_state` 都是静态 FP32 $[H,1]$，不能简写为 $[H]$。只支持沿最后一维更新，`axis` 可写 1 或 -1。
+
+返回值依次为新的运行最大值、运行指数和、旧状态缩放系数、当前指数 tile 和 LSE：
+
+~~~python
+m_new, l_new, alpha, p, lse = (
+    tl.zeus.fa2_online_softmax_update(
+        scores, m_state, l_state, axis=1,
+    )
+)
+~~~
+
+设当前 tile 的行最大值为 $m_t$，其状态关系为
+
+$$
+m_{\mathrm{new}}=\max(m_{\mathrm{state}},m_t),\qquad
+\alpha=\exp(m_{\mathrm{state}}-m_{\mathrm{new}}),
+$$
+
+$$
+p=\operatorname{ReLU}
+  \bigl(\exp(\mathrm{scores}-m_{\mathrm{new}})-10^{-30}\bigr),
+\qquad
+l_{\mathrm{new}}=\alpha l_{\mathrm{state}}+\sum p.
+$$
+
+减去微小常数并截断到零，用于抑制指数近似的残留。返回的 `p` 尚未除以运行指数和；它不是一份行和为 1 的最终概率矩阵。LSE 按 $m_{\mathrm{new}}+\log(\max(l_{\mathrm{new}},1))$ 形成。
+
+调用者负责沿历史 tile 循环传递状态、处理有效长度与因果 mask，以及使用 `alpha` 缩放已有输出 accumulator 后再合并当前 `pV`。此接口不替调用者读取 V、不更新最终输出，也不完成最后的归一化。状态初始化和全 mask 行的处理必须与整个注意力算法一致，不能只把普通 Softmax 调用换成这个多返回值接口。
+
+### sigmoid、log 与 softplus {#api-activation}
+
+这些入口选择 Zeus 的专用近似路径。它们保持输入输出形状；使用 FP32 输入建立数值基线，最终低精度输出在计算后显式转换。方法名称用于选择实现，不承诺对任意输入域、dtype 或模型误差预算都适用。
+
+~~~python
+tl.zeus.sigmoid(x, approx="fast", seg_num=64)
+tl.zeus.log(x, approx="accurate", seg_num=64)
+tl.zeus.softplus(x, approx="fast", seg_num=64)
+~~~
+
+`sigmoid` 的 `approx` 接受四种值：
+
+| 方法 | 计算组织 | 使用时关注 |
+|---|---|---|
+| `"fast"` | 直接分段线性拟合 | 输入范围及拟合误差 |
+| `"balanced"` | 两级查表级联 | 固定系数布局 |
+| `"accurate"` | 指数与倒数组合 | 中间舍入及最终误差 |
+| `"cascade_add"` | 两级分段结果显式相加 | 中间值和额外操作 |
+
+Table: sigmoid 的专用近似方法
+
+`seg_num` 是编译期参数，默认 64。`"balanced"` 和 `"accurate"` 使用固定查表布局，不通过改变此参数自由增加近似精度。应用应先保留默认值；若调整其他方法的分段数，须重新核对其系数、输入范围与计算误差。
+
+`log` 当前只接受 `approx="accurate"`，采用尾数与指数分解。调用者应提供正的有限正规数；零、负数、次正规数和非有限值不能按宿主数学库的特殊值处理方式直接外推。参数中的 `seg_num` 也不改变该方法固定的查表组织。
+
+`softplus` 接受 `"fast"`、`"decomp_w_abs"`、`"decomp_wo_abs"`。默认直接拟合的区间为 $[-10,10]$。
+
+::: {.keep}
+两种分解方法利用下列关系：
+
+$$
+\operatorname{softplus}(x)
+=\operatorname{ReLU}(x)+\log(1+\exp(-|x|)).
+$$
+:::
+
+其中前一种将绝对值关系包含在查表函数中，后一种显式计算绝对值。分解使用的拟合范围也有限，不能因公式数学上成立就忽略近似表的适用范围。
+
+~~~python
+x32 = x.to(tl.float32)
+gate = tl.zeus.sigmoid(x32, approx="accurate")
+y32 = x32 * gate
+y = y32.to(tl.bfloat16)
+~~~
+
+这个片段明确表达 SiLU 的乘法和输出转换。其他激活也应先按模型定义明确数学表达式，再选择误差满足要求的近似路径。验证时至少包含实际输入分布、范围边缘和接近零的位置；不要把方法名中的 `accurate` 当作逐位正确舍入保证。
+
+### make_pwlf 与 pwlf：自定义分段线性函数 {#api-pwlf}
+
+~~~python
+tl.zeus.make_pwlf(bp, k, b)
+tl.zeus.pwlf(x, lut)
+~~~
+
+`make_pwlf` 将断点 `bp`、斜率 `k` 和截距 `b` 组成 kernel 内的查表句柄；`pwlf` 对每个输入选择对应分段，并计算该段的线性函数。句柄不是宿主数组，也不是独立设备内存的 owner。
+
+系数必须是 FP32 张量。以一维表示时，`k`、`b` 的长度同为分段数 S，`bp` 的长度至少为 S+1，且 $1\le S\le64$；也可使用等价的 $[1,1,1,L]$ 系数形状。分段数不超过 32 时按一组查表组织，大于 32 时按两组组织。断点必须单调，补齐项也不能破坏查表范围。
+
+下面构造在 $[-1,1)$ 上表示 ReLU 的两段线性函数。额外断点用于满足系数张量长度，示例只声明这一输入区间的行为。
+
+~~~python
+bp = tl.arange(0, 4).to(tl.float32) - 1.0
+segment = tl.arange(0, 2)
+slope = tl.where(segment == 0, 0.0, 1.0)
+bias = tl.full((2,), 0.0, tl.float32)
+lut = tl.zeus.make_pwlf(bp, slope, bias)
+y32 = tl.zeus.pwlf(x32, lut)
+~~~
+
+实际应用可以从系数缓冲区装载 `bp/k/b`，并在循环外创建句柄，供多个 tile 复用。输入为整数时先显式转为 FP32；采用 BF16 输入输出时，还要把端点转换误差纳入评估。FP16 形式不作为本书的设备使用基线。
+
+::: {.tip}
+查表函数的质量由系数和输入域共同决定。记录拟合区间、断点约定、最大绝对误差和输出转换方式；对分段交界两侧分别取样。增加分段数前先确认当前误差来自拟合，还是来自低精度输入输出。
+:::
+
+若误差要求覆盖全域，不应让超出拟合区间的数据直接落入未定义的使用范围。可以约束模型输入、选用具有明确边界处理的组合表达式，或重新准备覆盖目标范围的系数；每种选择都要保持与参考计算相同的数学语义。
+
+### 归一化查表计算 {#api-normalized-lut}
+
+`ztl` 还提供四个显式查表接口，便于在已知输入域上控制系数。它们均返回与输入相同形状的 FP32 值。
+
+~~~python
+ztl.positive_normal_reciprocal(x, lut)
+ztl.positive_normal_rsqrt(x, lut)
+ztl.exp_with_lut(x, lut)
+ztl.sigmoid_with_exp_lut(x, lut)
+~~~
+
+前两个接口要求输入是**正的、有限的 FP32 正规数**。倒数先把输入写成 $m2^e$，在 $m\in[1,2)$ 上拟合 $1/m$，再恢复指数缩放；倒平方根把指数调整为偶数，在 $m\in[1,4)$ 上拟合 $1/\sqrt m$。它们接收 `make_pwlf` 生成的一组或两组系数句柄。
+
+~~~python
+lut = tl.zeus.make_pwlf(bp, slope, bias)
+inv = ztl.positive_normal_reciprocal(x32, lut)
+~~~
+
+片段中的系数必须拟合归一化后的尾数函数，不能直接拿原始输入区间上的倒数拟合表替代。若一张表只针对 BF16 可表示值验证过，即使调用时转成 FP32，也不能把它的误差结论推广到所有 FP32 输入。
+
+`exp_with_lut` 与 `sigmoid_with_exp_lut` 要求 FP32 输入和两组、共六个系数张量；对应 64 段的 $2^f$ 查表，分数域为 $[0,1)$。第二个接口使用这份指数表组织 Sigmoid，不接受一张直接拟合 Sigmoid 的表。输入范围还须使指数缩放处于所用数值路径的有效域。
+
+::: {.caution}
+归一化查表接口不是 IEEE 除法或完整数学库的替代品。零、负数、次正规数及非有限值不属于正正规数接口的输入域；指数路径的上溢、下溢也需单独处理。系数的误差边界由使用方负责建立。
+:::
+
+### floor：保留元素类型的向下取整 {#api-zeus-floor}
+
+~~~python
+tl.zeus.floor(x)
+~~~
+
+接口对每个元素向负无穷取整，保持 shape 和 dtype。它接受 FP32、BF16、FP8 E4M3FN 和有符号 INT8；INT8 已经是整数，按原值返回。FP64、其他 FP8 格式及其他整数类型不在此接口范围内。
+
+~~~python
+x32 = x.to(tl.float32)
+rounded = tl.zeus.floor(x32)
+index = rounded.to(tl.int32)
+~~~
+
+`floor` 返回浮点值时，不会隐式变成整数索引。若后续需要 INT32，先确保数值落在可表示范围，再执行类型转换。浮点计算中的零规范化为正零，不承诺保留 NaN payload；本接口也不表示整数的向下取整除法。
+
+## 执行策略提示
+
+### vp_hint 与 dt_hint：标注一个操作 {#api-executor-hint}
+
+~~~python
 ztl.vp_hint(value, num_vp="auto")
 ztl.dt_hint(value, num_dt="auto")
-```
+~~~
 
-**参数与语义。** 返回与 value 相同的逻辑值，并附加供编译器消费的策略。计数接受 `"auto"` 或 1–4 的整数；整数为精确要求，无法满足时不能静默当成其他计数。
+这两个接口标注产生 `value` 的操作，分别请求 VP 或 DT 执行策略。返回值与输入 shape、dtype 相同，应让后续消费者使用这个返回值。忽略它而继续使用未标注的原值，可能使提示被消除。
 
-**Zeus 使用约束。** 适用性取决于操作、shape、布局、别名及物理资源。VP 与 DT 的可拆分条件不同，不能将一种操作的配置照搬到另一种。全局 `--num-vp` 请求与局部精确 hint 也不是同一层含义。
+`num_vp`、`num_dt` 必须在编译期确定，合法值为 `"auto"` 或 1 至 4 的整数，不接受布尔值。`"auto"` 让编译器在合法拆分范围内选择；整数表示明确的执行单元数量要求。对无法满足的多执行器精确要求，编译会报错，不会悄悄降为一个执行器。
 
-```python
-value = x32 + y32
-value = ztl.vp_hint(value, num_vp=1)
-tl.store(out_ptr + offsets, value.to(tl.bfloat16), valid)
-```
+~~~python
+x32 = x.to(tl.float32)
+y32 = ztl.vp_hint(x32 + 1.0, num_vp="auto")
+tl.store(out_ptr + offsets, y32, mask=valid)
+~~~
 
-**常见错误与关联操作。** 忽略返回值会让提示脱离后继计算，甚至被优化移除。指定更多单元也可能增加拆分、同步和写回成本。优化选择应以[性能分析与调优](#performance)的同条件对照为依据。
+VP 提示适用于可映射的向量计算。DT 提示应用于转置等数据变换，例如下面把一个逻辑转置分给两个 DT；完整 tile 为 $[64,64]$ BF16，目标块指针描述转置后的布局。
 
-### parallel_executor_hint 与 double_buffer_hint {#api-kernel-hint}
+~~~python
+x = tl.load(input_block)
+y = ztl.dt_hint(tl.trans(x), num_dt=2)
+tl.store(output_block, y)
+~~~
 
-**用途。** 为整个 kernel 开启独立操作并行分析或实验性双缓冲分析。
+操作的 dtype、形状、连续方向和依赖决定能否拆分。不能因为一个 BF16 转置可以使用两个 DT，就把相同提示移到任意 gather、归约或尾块上。精确策略失败时，应先核对报错指出的拆分条件，再考虑保持默认或使用 `"auto"`。
 
-```python
+::: {.note}
+`num_vp=2` 表示请求一个操作使用两个 VP，不表示增加两个程序实例，也不表示每个元素执行两次。提示没有运行时屏障语义，不改变输出归属；多个物理执行器仍共同完成原来的逻辑操作。
+:::
+
+### parallel_executor_hint：调度独立工作 {#api-kernel-hint}
+
+~~~python
 ztl.parallel_executor_hint()
-ztl.double_buffer_hint()
-```
+~~~
 
-**参数与语义。** 两个接口都不接受用户参数，也不返回计算结果。它们改变编译分析入口，不是设备运行时屏障或异步任务句柄。
+该提示作用于整个 kernel，允许编译器寻找可分配给不同执行器的独立操作组或循环。它与把一个 tile 拆给多个 VP/DT 的值提示不同；应用不必把每条表达式都包上一层 `vp_hint`。
 
-**Zeus 使用约束。** 须在 kernel 顶层调用，通常作为第一条语句；for/if 不会将作用域缩到单次迭代。编译器仍检查独立性、别名、容量和依赖；实验性 DoubleBuffer 只改写满足条件的循环。
+调用必须放在 kernel 顶层，不能位于 `for` 或 `if` 内，通常写成第一条语句。下面的两个向量分支具有独立输入和输出；N 在一个静态 tile 范围内，宿主须保证四个缓冲区之间没有破坏独立性的重叠。
 
-```python
-ztl.parallel_executor_hint()
-a = x32 + bias_x
-b = y32 * scale_y
-result = a + b
-```
+~~~python
+@triton.jit
+def two_outputs(x_ptr, y_ptr, p_ptr, q_ptr, N,
+                BLOCK: tl.constexpr):
+    ztl.parallel_executor_hint()
+    i = tl.arange(0, BLOCK)
+    valid = i < N
+    x = tl.load(x_ptr + i, valid, other=0.0)
+    y = tl.load(y_ptr + i, valid, other=0.0)
+    p = x + 1.0
+    q = y * 2.0
+    tl.store(p_ptr + i, p, valid)
+    tl.store(q_ptr + i, q, valid)
+~~~
 
-**常见错误与关联操作。** 这个例子展示 a/b 的逻辑独立性，但实际并行还要经过编译器分析。图中有两条计算分支并不等于执行时有两个活跃 lane。双缓冲同样不能取消读后写或写后读依赖。
+源代码表达了两个可供分析的分支，不承诺它们一定形成并行指令。编译器还会检查访存独立性、别名、工作集和支持的操作组合；没有合适的组时可以保持单执行器，并给出提示未生效的诊断。
 
-### early_exit_if：按设备标量跳过后续工作 {#api-early-exit}
+这一接口与对单个 kernel 启用 `--enable-parallel-executor` 具有相同的分析范围。它既不创建 Host stream，也不建立核间通信。性能判断应查看实际生成的执行器分配与依赖，再比较相同输入下的总时间，不能按提示条数估算并发度。
 
-**用途。** 在协议明确允许时，按设备中已有的条件提前结束后续计算。
+### 自动双缓冲的使用边界 {#api-double-buffer}
 
-```python
+::: {.caution}
+自动 double buffer、`--enable-double-buffer` 和 `ztl.double_buffer_hint()` 均属于实验性能力，目前不完善，暂不推荐使用。不要把启用选项视为正确重叠、资源容量或性能收益的保证。
+:::
+
+`ztl.double_buffer_hint()` 是无参数的 kernel 级编译提示，对应自动双缓冲分析；它不是一条设备同步指令，也不直接分配两份用户可控制的缓冲。形式上要求位于 kernel 顶层，但满足这一语法条件并不使任意循环成为可用的流水线。
+
+手写预取与计算流水需要另行证明：预取地址在有效范围内，生产者完成后消费者才读取，最后一次消费完成后缓冲才复用，循环尾部不会多读下一块。代码中出现两个变量、两份 buffer 或交替下标，都不等于最终指令一定重叠。
+
+正式实现应先建立顺序执行且可验证的基线，再按[性能分析与调优](#performance)检查真实的数据依赖和执行时间。不能通过提前复用 buffer、删去必要依赖或扩大未验证输入域来制造表面上的重叠。
+
+## 设备端提前退出 {#api-early-exit}
+
+~~~python
 ztl.early_exit_if(flag, nonzero=True)
-```
+~~~
 
-**参数与语义。** flag 必须是单元素 FP32 张量。`nonzero=True` 时非零触发退出，False 时零触发退出。退出意味着文本上后续原本要执行的写入被跳过；这些输出保持先前内容。
+该接口在设备侧判断一个单元素 FP32 标志，并按条件跳过后续工作。`nonzero` 是编译期布尔策略：为真时，非零标志触发退出；为假时，零标志触发退出。标志应使用小的非负整数值，推荐只采用 `0.0` 和 `1.0`。
 
-**Zeus 使用约束。** 输入条件与输出初始化须遵守同一协议。各核条件可能不同时，后续不能有全核同步。解释器将此标记视为恒等操作，不能据此证明设备提前退出正确。
+下例由一个实例处理不超过 BLOCK 个元素。宿主先准备 flag，输出缓冲必须具有调用者希望在退出时保留的内容。
 
-```python
-flag = tl.load(flag_ptr + tl.arange(0, 1))
-ztl.early_exit_if(flag, nonzero=True)
-x = tl.load(x_ptr + offsets, valid, other=0.0)
-tl.store(out_ptr + offsets, x, valid)
-```
+~~~python
+@triton.jit
+def guarded_copy(out_ptr, in_ptr, flag_ptr, N,
+                 BLOCK: tl.constexpr):
+    flag = tl.load(flag_ptr + tl.arange(0, 1))
+    ztl.early_exit_if(flag, nonzero=True)
 
-**常见错误与关联操作。** 触发退出时，未初始化的 empty 输出仍保留旧内容。调用方须预先初始化、返回有效状态，或按协议决定能否读取；跳过写入不会自动输出零。
+    i = tl.arange(0, BLOCK)
+    valid = i < N
+    x = tl.load(in_ptr + i, valid, other=0.0)
+    tl.store(out_ptr + i, x, valid)
+~~~
+
+`flag_ptr` 指向 FP32 数据。flag 为 1 时，复制部分不执行，输出保留此前内容；flag 为 0 时，执行正常复制。提前退出不会替输出写零，也不会撤销调用前已经完成的工作。
+
+::: {.caution}
+不要把任意浮点数当作布尔标志。当前判断路径先转换为整数，`0.5` 不具有“非零必退出”的语义。将标志限定为 `0.0/1.0`，并在其写入完成后再启动消费者。
+:::
+
+为了表达整个 kernel 的后续退出，调用应处于顶层、位于需要保护的操作之前。嵌入某个循环体或分支时，其作用只覆盖所在块的后续部分，不能把它理解为 Python 的函数级 `return`。
+
+这是一次已启动 kernel 内的设备判断，不会取消 Host 上的提交，也不会自动跳过其他核的工作。若算法含跨核等待，各核的退出条件必须与通信顺序兼容，避免一核退出而另一核继续等待。与输出初始化、stream 顺序及 owner 生命周期的配合，仍遵循[编译、装载与运行](#compile-and-run)中的规则。
