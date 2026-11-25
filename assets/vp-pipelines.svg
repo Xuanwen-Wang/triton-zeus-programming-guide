@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="676" viewBox="0 0 900 676">
+<title>单个 VP 的两组 32 lane：宽模式与级联模式</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">单 VP 放大 · 相同硬件的两种数据路径</text>
+<rect x="20" y="66" width="420" height="530" rx="4" fill="#ffffff" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="230" y="105" font-size="25" fill="#183D52" font-weight="600" text-anchor="middle">宽模式 · 两组并行</text>
+<text x="230" y="135" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">不同元素使用相同运算配置</text>
+<rect x="460" y="66" width="420" height="530" rx="4" fill="#ffffff" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="670" y="105" font-size="25" fill="#183D52" font-weight="600" text-anchor="middle">级联模式 · 前后接续</text>
+<text x="670" y="135" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">同一批元素经过两段运算</text>
+<rect x="48" y="157" width="364" height="70" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="230.0" y="187.0" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">x[0] … x[63]</text>
+<text x="230.0" y="217.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">64 个 BF16 元素</text>
+<rect x="488" y="157" width="364" height="70" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="670.0" y="187.0" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">x[0] … x[31]</text>
+<text x="670.0" y="217.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">32 个 BF16 元素</text>
+<polyline points="230,227 230,251" fill="none" stroke="#627987" stroke-width="2"/>
+<polyline points="230,251 130,251 130,296" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="48" y="296" width="164" height="122" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="130" y="328" font-size="20" fill="#147D89" font-weight="400" text-anchor="middle">x[0] … x[31]</text>
+<text x="130" y="363" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">组 A · 32 lane</text>
+<text x="130" y="398" font-size="24" fill="#203D4D" font-weight="400" text-anchor="middle">f(x)</text>
+<polyline points="130,418 130,464 230,464" fill="none" stroke="#147D89" stroke-width="2"/>
+<polyline points="230,251 330,251 330,296" fill="none" stroke="#387EA8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="248" y="296" width="164" height="122" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="330" y="328" font-size="20" fill="#387EA8" font-weight="400" text-anchor="middle">x[32] … x[63]</text>
+<text x="330" y="363" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">组 B · 32 lane</text>
+<text x="330" y="398" font-size="24" fill="#203D4D" font-weight="400" text-anchor="middle">f(x)</text>
+<polyline points="330,418 330,464 230,464" fill="none" stroke="#387EA8" stroke-width="2"/>
+<polyline points="230,464 230,504" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="48" y="504" width="364" height="65" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="230.0" y="531.5" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">y[0] … y[63]</text>
+<text x="230.0" y="561.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">y = f(x) · 64 个元素</text>
+<polyline points="670,227 670,257" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="562" y="257" width="216" height="86" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="670.0" y="295.0" font-size="23" fill="#147D89" font-weight="600" text-anchor="middle">组 A · 32 lane</text>
+<text x="670.0" y="325.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">u = f(x)</text>
+<polyline points="670,343 670,385" fill="none" stroke="#387EA8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="692" y="371" font-size="19" fill="#387EA8" font-weight="400" text-anchor="start">u[0] … u[31]</text>
+<rect x="562" y="385" width="216" height="86" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="670.0" y="423.0" font-size="23" fill="#387EA8" font-weight="600" text-anchor="middle">组 B · 32 lane</text>
+<text x="670.0" y="453.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">y = g(u)</text>
+<polyline points="670,471 670,504" fill="none" stroke="#387EA8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="488" y="504" width="364" height="65" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="670.0" y="531.5" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">y[0] … y[31]</text>
+<text x="670.0" y="561.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">y = g(f(x)) · 32 个元素</text>
+<text x="20" y="632" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">每核有 4 个独立 VP；本图只展开其中 1 个。</text>
+<text x="18" y="664" font-size="18" fill="#627987" font-weight="400" text-anchor="start">以可用的 BF16 单输入路径为例；箭头表示数据依赖，不表示一拍完成。</text>
+</g></svg>

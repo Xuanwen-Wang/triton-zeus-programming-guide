@@ -1,10 +1,10 @@
 # Triton Zeus 编程指南
 
-面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Triton 语言接口、算子开发与性能优化。当前版本 **v0.0.4**，包括 14 章、附录 A–D、31 个语言 API 条目和 8 个完整 kernel 示例。
+面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Triton 语言接口、算子开发与性能优化。当前版本 **v0.0.5**，包括 14 章、附录 A–D、31 个语言 API 条目和 8 个完整 kernel 示例。
 
 **[在线阅读](https://xuanwen-wang.github.io/triton-zeus-programming-guide/)** · **[下载 PDF](https://xuanwen-wang.github.io/triton-zeus-programming-guide/Triton-Zeus-Programming-Guide.pdf)** · [章节索引](OUTLINE.md) · [版本记录](CHANGELOG.md)
 
-网页版提供章节导航、全文搜索、代码复制和插图放大。网页版与 PDF 共用 `chapters/` 下的 Markdown 正文；`book.yaml` 管理版本、日期和章节顺序。示例程序位于 `examples/`，插图由 `scripts/draw_*.py` 生成，可继续编辑。
+网页版提供章节导航、全文搜索、代码复制和插图放大。网页版与 PDF 共用 `chapters/` 下的 Markdown 正文；`book.yaml` 管理版本、日期和章节顺序。示例程序位于 `examples/`，正文示意图由 `scripts/draw_*.py` 生成，可继续编辑。封面采用独立的近存计算主题插画，标题、公司名、版本与日期均由 Typst 排为矢量文字；[插画生成说明](assets/cover-art-v005.prompt.txt)与资产一同保留。
 
 ## 阅读路线
 

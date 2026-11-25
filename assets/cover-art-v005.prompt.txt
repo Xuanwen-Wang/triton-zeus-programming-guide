@@ -1,0 +1,38 @@
+Cover artwork for Triton Zeus Programming Guide v0.0.5.
+Created with the built-in imagegen tool. The artwork is an abstract illustration,
+not a hardware diagram. All cover typography is typeset separately in Typst.
+
+Generation prompt:
+Use case: stylized-concept. Asset type: full-bleed A4 portrait cover background
+for a premium professional semiconductor programming manual, Triton Zeus by
+Polar Bear Tech. Create a sophisticated editorial 3D artwork, not a mockup of a
+book. Portrait aspect ratio about 1:1.414, high resolution suitable for a printed
+cover. Subject: an elegant architectural sculpture evoking near-memory computing
+and stacked 3D DRAM: precisely layered thin sapphire-blue and brushed-silver
+plates, fine vertical interconnect pins, and a finely patterned compute plane.
+It is abstract art, not a literal hardware block diagram. One coherent sculptural
+composition occupies the lower middle and right half, approximately y=43% to
+83%, with a strong diagonal perspective and refined shallow shadows. Background
+deep midnight navy #102d42, smooth with subtle atmospheric blue depth; restrained
+ice-cyan rim lighting, no neon glow. Upper 42% remains clean and calm dark navy
+for later vector typesetting of the book title; bottom 12% also clean dark navy
+for company and version metadata. Keep meaningful margins around the sculpture.
+Premium engineering publisher art direction: striking, precise, restrained,
+contemporary, beautifully crafted material detail, confident contrast, minimal
+clutter. No text, no letters, no numerals, no logos, no watermarks, no people, no
+decorative graphs, no generic floating icons, no circuit-board spaghetti, no fake
+labels. Do not render a physical book or page shadow. Return only the complete
+flat cover artwork.
+
+Refinement prompt:
+Prepare a high-resolution print master of this exact cover artwork. Preserve
+the entire existing composition, camera perspective, object placement, dark navy
+background, sapphire and brushed-silver plates, all negative space, and restrained
+lighting. Render at 2400 by 3392 pixels if supported, or the highest supported
+portrait resolution for an A4 print cover. Improve fine material and pin details
+and edge clarity only. Do not change the composition, crop, or color palette.
+Do not add any text, typography, logo, border, watermark, book mockup or additional
+objects. This is the final unlettered cover illustration; text will be placed
+separately in the PDF as vectors.
+
+Actual returned image: 1055 x 1491 pixels. No artificial upsampling was applied.

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="630" viewBox="0 0 900 630">
+<title>专用 K 页索引：token 1025 到 payload 字节地址 32896</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">BF16 K · 每页 1024 token × 128 dim = 256 KiB</text>
+<text x="20" y="81" font-size="24" fill="#183D52" font-weight="600" text-anchor="start">逻辑页 → 表项编码</text>
+<rect x="20" y="111" width="320" height="72" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="180.0" y="142.0" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">页 0 → 18</text>
+<text x="180.0" y="172.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">token 0–1023</text>
+<rect x="20" y="208" width="320" height="72" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="180.0" y="239.0" font-size="24" fill="#183D52" font-weight="600" text-anchor="middle">页 1 → 2</text>
+<text x="180.0" y="269.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">token 1024–2047</text>
+<text x="20" y="321" font-size="21" fill="#627987" font-weight="400" text-anchor="start">每个表项复制到 8 路</text>
+<text x="20" y="355" font-size="21" fill="#627987" font-weight="400" text-anchor="start">编码单位：16 KiB</text>
+<text x="480" y="81" font-size="24" fill="#183D52" font-weight="600" text-anchor="start">本核 LDG 相对字节地址</text>
+<rect x="480" y="111" width="400" height="65" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="680.0" y="138.5" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">索引表 · 32 KiB</text>
+<text x="680.0" y="168.5" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">[0,32768)</text>
+<rect x="480" y="197" width="400" height="92" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="680.0" y="238.0" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">逻辑页 1 payload</text>
+<text x="680.0" y="268.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">[32768,294912)</text>
+<rect x="480" y="310" width="400" height="92" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="680.0" y="351.0" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">逻辑页 0 payload</text>
+<text x="680.0" y="381.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">[294912,557056)</text>
+<polyline points="340,244 480,244" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="410" y="223" font-size="20" fill="#147D89" font-weight="600" text-anchor="middle">2 × 16384</text>
+<text x="20" y="454" font-size="24" fill="#183D52" font-weight="600" text-anchor="start">读取 token 1025、dim 0 的地址链</text>
+<rect x="20" y="476" width="200" height="66" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="120.0" y="504.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">1025 // 1024</text>
+<text x="120.0" y="534.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">逻辑页 1</text>
+<polyline points="220,509 240,509" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="240" y="476" width="200" height="66" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="340.0" y="504.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">index[1] = 2</text>
+<text x="340.0" y="534.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">payload 编码</text>
+<polyline points="440,509 460,509" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="460" y="476" width="200" height="66" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="560.0" y="504.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">2 × 16384</text>
+<text x="560.0" y="534.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">页首 32768 B</text>
+<polyline points="660,509 680,509" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="680" y="476" width="200" height="66" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="780.0" y="504.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">页内 token 1</text>
+<text x="780.0" y="534.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">偏移 128 B</text>
+<text x="450" y="577" font-size="24" fill="#147D89" font-weight="600" text-anchor="middle">最终相对地址：32768 + 128 = 32896 B</text>
+<text x="18" y="618" font-size="18" fill="#627987" font-weight="400" text-anchor="start">这里的表项定位 K payload；USaddr 定位 scale 第一页，两者含义不同。</text>
+</g></svg>

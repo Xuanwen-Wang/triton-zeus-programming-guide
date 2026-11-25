@@ -1,29 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="610" viewBox="0 0 900 610">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="490" viewBox="0 0 900 490">
 <title>Triton Zeus 编译流水线</title>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
 <g font-family="Noto Sans CJK SC, sans-serif">
-<rect x="18" y="15" width="310" height="65" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
-<text x="173.0" y="54.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">Triton Python</text>
-<text x="385" y="55" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">kernel、signature、constants</text>
-<polyline points="173,80 173,106" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
-<rect x="18" y="106" width="310" height="65" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
-<text x="173.0" y="145.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">TTIR</text>
-<text x="385" y="146" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">张量形状、类型与指针表达式</text>
-<polyline points="173,171 173,197" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
-<rect x="18" y="197" width="310" height="65" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
-<text x="173.0" y="236.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">Linalg / MemRef</text>
-<text x="385" y="237" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">结构化计算、循环与缓冲区</text>
-<polyline points="173,262 173,288" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
-<rect x="18" y="288" width="310" height="65" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
-<text x="173.0" y="327.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">ZeusHigh</text>
-<text x="385" y="328" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">执行单元、描述符与存储分配</text>
-<polyline points="173,353 173,379" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
-<rect x="18" y="379" width="310" height="65" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
-<text x="173.0" y="418.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">ZeusLow</text>
-<text x="385" y="419" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">设备命令、控制流与同步</text>
-<polyline points="173,444 173,470" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
-<rect x="18" y="470" width="310" height="65" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
-<text x="173.0" y="509.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">.zbin</text>
-<text x="385" y="510" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">供运行时加载的设备程序</text>
-<text x="18" y="598" font-size="18" fill="#627987" font-weight="400" text-anchor="start">.S 与 .debug 用于诊断；.o 可封装设备二进制供宿主链接。</text>
+<rect x="18" y="15" width="310" height="55" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="173.0" y="49.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">Triton Python</text>
+<text x="385" y="50" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">kernel、signature、constants</text>
+<polyline points="173,70 173,87" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="18" y="87" width="310" height="55" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="173.0" y="121.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">TTIR</text>
+<text x="385" y="122" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">张量形状、类型与指针表达式</text>
+<polyline points="173,142 173,159" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="18" y="159" width="310" height="55" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="173.0" y="193.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">Linalg / MemRef</text>
+<text x="385" y="194" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">结构化计算、循环与缓冲区</text>
+<polyline points="173,214 173,231" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="18" y="231" width="310" height="55" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="173.0" y="265.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">ZeusHigh</text>
+<text x="385" y="266" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">执行单元、描述符与存储分配</text>
+<polyline points="173,286 173,303" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="18" y="303" width="310" height="55" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="173.0" y="337.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">ZeusLow</text>
+<text x="385" y="338" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">设备命令、控制流与同步</text>
+<polyline points="173,358 173,375" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="18" y="375" width="310" height="55" rx="8" fill="#F0F5F8" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="173.0" y="409.5" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">.zbin</text>
+<text x="385" y="410" font-size="22" fill="#203D4D" font-weight="400" text-anchor="start">供运行时加载的设备程序</text>
+<text x="18" y="478" font-size="18" fill="#627987" font-weight="400" text-anchor="start">.S 与 .debug 用于诊断；.o 可封装设备二进制供宿主链接。</text>
 </g></svg>

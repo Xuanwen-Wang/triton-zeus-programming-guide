@@ -32,6 +32,8 @@ def main():
     subprocess.run(["python3", "scripts/draw_figures.py"], cwd=ROOT, check=True)
     subprocess.run(["python3", "scripts/draw_architecture.py"], cwd=ROOT, check=True)
     subprocess.run(["python3", "scripts/draw_interfaces.py"], cwd=ROOT, check=True)
+    subprocess.run(["python3", "scripts/draw_practice_layouts.py"], cwd=ROOT, check=True)
+    subprocess.run(["python3", "scripts/draw_ldg.py"], cwd=ROOT, check=True)
     front = [ROOT / "chapters/00-copyright.md", ROOT / "chapters/00-preface.md"]
     # Pandoc already owns YAML parsing; consume its typed metadata instead of
     # introducing a second YAML parser with different quoting behavior.
@@ -94,8 +96,11 @@ def main():
     inputs = [ROOT / "book.yaml", ROOT / "layout/book.typ", ROOT / "layout/guide.lua",
               ROOT / "scripts/draw_figures.py", ROOT / "scripts/draw_architecture.py",
               ROOT / "scripts/draw_interfaces.py",
+              ROOT / "scripts/draw_practice_layouts.py",
+              ROOT / "scripts/draw_ldg.py",
               ROOT / "scripts/build_guide.py"]
-    inputs += chapter_paths + sorted((ROOT / "assets").glob("*.svg"))
+    inputs += chapter_paths + sorted(p for p in (ROOT / "assets").iterdir()
+                                    if p.suffix in {".svg", ".png", ".jpg"})
     inputs += sorted((ROOT / "examples").glob("*.py"))
     if (ROOT / "validation-summary.json").is_file():
         inputs.append(ROOT / "validation-summary.json")

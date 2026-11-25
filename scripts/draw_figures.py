@@ -190,7 +190,7 @@ def interface_map():
 
 
 def compiler():
-    d = Diagram(610, "Triton Zeus 编译流水线")
+    d = Diagram(490, "Triton Zeus 编译流水线")
     stages = [
         ("Triton Python", "kernel、signature、constants"),
         ("TTIR", "张量形状、类型与指针表达式"),
@@ -200,11 +200,11 @@ def compiler():
         (".zbin", "供运行时加载的设备程序"),
     ]
     for i, (t, s) in enumerate(stages):
-        y = 15+i*91
-        d.box(18, y, 310, 65, t, fill=AQUA if i in [3, 4] else PALE)
-        d.text(385, y+40, s, 22)
+        y = 15+i*72
+        d.box(18, y, 310, 55, t, fill=AQUA if i in [3, 4] else PALE)
+        d.text(385, y+35, s, 22)
         if i < 5:
-            d.path([(173, y+65), (173, y+91)])
+            d.path([(173, y+55), (173, y+72)])
     d.note(".S 与 .debug 用于诊断；.o 可封装设备二进制供宿主链接。")
     d.save("compiler-pipeline.svg")
 

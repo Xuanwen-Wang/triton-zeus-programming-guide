@@ -116,6 +116,12 @@ def main():
 
     OUT.mkdir(exist_ok=True)
     (OUT / "assets").mkdir(exist_ok=True)
+    # Keep repeated local builds identical to a clean CI build when figures
+    # are replaced or removed from the source chapters.
+    for previous in (OUT / "assets").iterdir():
+        if previous.is_file() and previous.suffix in {".svg", ".png", ".jpg"}:
+            if previous.relative_to(OUT).as_posix() not in images:
+                previous.unlink()
     for asset in images:
         path = (ROOT / asset).resolve()
         if not path.is_relative_to(ROOT / "assets") or not path.is_file():

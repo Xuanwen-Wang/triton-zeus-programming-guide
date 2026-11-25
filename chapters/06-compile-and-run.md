@@ -29,12 +29,12 @@ python examples/vector_add.py --numel 2500 --run-device
 
 执行后端和编译模式是两个独立选择。`ZECC_KERNEL_MODE` 决定特化从 JIT 缓存还是 AOT bundle 获取；功能模拟或物理设备决定生成的 kernel 在哪里执行。选择 AOT 不会自动改成物理设备，选择 JIT 也不意味着在 CPU 上解释 kernel。
 
-配套 SDK 应在激活时配置 Python、native 库、编译器及执行后端。模拟运行时提供以下显式选择；路径使用 SDK 实际交付的位置，在首次 Zeus 内存分配和启动前设置。
+配套 SDK 应在激活时配置 Python、native 库、编译器及执行后端。模拟运行时通过 `ZEUS_V3_BACKEND` 选择下表中的后端；路径使用 SDK 实际交付的位置，在首次 Zeus 内存分配和启动前设置。
 
-| 模拟运行时配置 | 值的含义 | 配套位置 |
-|---|---|---|
-| `ZEUS_V3_BACKEND=local-cpp` | 使用本地 C++ 模拟器后端 | `ZEUS3_CPP_SIMULATOR` 指向配套模拟器可执行文件 |
-| `ZEUS_V3_BACKEND=local-python` | 使用本地 Python 模拟器后端 | `ZEUSV3_SIMULATOR_DIR` 指向配套模拟器目录 |
+| 后端变量的值 | 配套位置 |
+|---|---|
+| `local-cpp` | `ZEUS3_CPP_SIMULATOR` 指向配套 C++ 模拟器可执行文件 |
+| `local-python` | `ZEUSV3_SIMULATOR_DIR` 指向配套 Python 模拟器目录 |
 
 Table: 模拟运行时的显式后端选择
 

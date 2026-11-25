@@ -25,6 +25,16 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     document = fitz.open(path)
     reader = PdfReader(path, strict=True)
+    outlines = document.get_toc()
+    navigation = []
+    for title in ("目录", "插图目录", "表格目录"):
+        matches = [item for item in outlines if item[1] == title]
+        if len(matches) != 1:
+            raise SystemExit(f"Expected one PDF bookmark for {title}: {matches}")
+        level, _, physical_page = matches[0]
+        if level != 1 or title not in document[physical_page - 1].get_text():
+            raise SystemExit(f"Invalid navigation bookmark target: {matches[0]}")
+        navigation.append({"title": title, "physical_page": physical_page})
     pages = []
     failures = []
     total_links = 0
@@ -82,6 +92,7 @@ def main():
     report = {
         "pdf": str(path.relative_to(ROOT)), "sha256": sha,
         "page_count": len(document), "toc_entries": len(document.get_toc()),
+        "navigation_bookmarks": navigation,
         "links": total_links, "structural_failure_pages": failures,
         "internal_path_or_placeholder_matches": sensitive,
         "pages": pages,

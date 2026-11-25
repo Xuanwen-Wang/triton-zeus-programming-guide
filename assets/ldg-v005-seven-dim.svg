@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="650" viewBox="0 0 900 650">
+<title>七维 reshape 与 permute，以及 B[70,145] 的字节位置</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">W[256,128] · normal BF16 · blocksize = 128</text>
+<text x="20" y="78" font-size="23" fill="#183D52" font-weight="600" text-anchor="start">reshape：按 N、K 的原逻辑次序拆开坐标</text>
+<rect x="20" y="98" width="121" height="83" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="80" y="129" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">n_b</text>
+<text x="80" y="164" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">2</text>
+<rect x="143" y="98" width="121" height="83" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="203" y="129" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">n_g</text>
+<text x="203" y="164" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">1</text>
+<rect x="266" y="98" width="121" height="83" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="326" y="129" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">n_l</text>
+<text x="326" y="164" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">8</text>
+<rect x="389" y="98" width="121" height="83" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="449" y="129" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">n_i</text>
+<text x="449" y="164" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">16</text>
+<rect x="512" y="98" width="121" height="83" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="572" y="129" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">k_g</text>
+<text x="572" y="164" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">2</text>
+<rect x="635" y="98" width="121" height="83" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="695" y="129" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">k_l</text>
+<text x="695" y="164" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">1</text>
+<rect x="758" y="98" width="121" height="83" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="818" y="129" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">k_i</text>
+<text x="818" y="164" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">64</text>
+<text x="20" y="224" font-size="23" fill="#183D52" font-weight="600" text-anchor="start">permute (0,1,4,2,5,3,6)：形成连续 miniblock</text>
+<rect x="20" y="244" width="121" height="83" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="80" y="275" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">n_b</text>
+<text x="80" y="310" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">2</text>
+<rect x="143" y="244" width="121" height="83" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="203" y="275" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">n_g</text>
+<text x="203" y="310" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">1</text>
+<rect x="266" y="244" width="121" height="83" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="326" y="275" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">k_g</text>
+<text x="326" y="310" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">2</text>
+<rect x="389" y="244" width="121" height="83" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="449" y="275" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">n_l</text>
+<text x="449" y="310" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">8</text>
+<rect x="512" y="244" width="121" height="83" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="572" y="275" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">k_l</text>
+<text x="572" y="310" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">1</text>
+<rect x="635" y="244" width="121" height="83" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="695" y="275" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">n_i</text>
+<text x="695" y="310" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">16</text>
+<rect x="758" y="244" width="121" height="83" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="818" y="275" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">k_i</text>
+<text x="818" y="310" font-size="25" fill="#203D4D" font-weight="400" text-anchor="middle">64</text>
+<text x="20" y="372" font-size="23" fill="#183D52" font-weight="600" text-anchor="start">miniblock 3：八个 2 KiB 片段；选中片段 1</text>
+<rect x="20.0" y="392" width="107.5" height="62" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="74.0" y="431" font-size="22" fill="#203D4D" font-weight="600" text-anchor="middle">片段 0</text>
+<rect x="127.5" y="392" width="107.5" height="62" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="181.5" y="431" font-size="22" fill="#B87924" font-weight="600" text-anchor="middle">片段 1</text>
+<rect x="235.0" y="392" width="107.5" height="62" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="289.0" y="431" font-size="22" fill="#203D4D" font-weight="600" text-anchor="middle">片段 2</text>
+<rect x="342.5" y="392" width="107.5" height="62" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="396.5" y="431" font-size="22" fill="#203D4D" font-weight="600" text-anchor="middle">片段 3</text>
+<rect x="450.0" y="392" width="107.5" height="62" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="504.0" y="431" font-size="22" fill="#203D4D" font-weight="600" text-anchor="middle">片段 4</text>
+<rect x="557.5" y="392" width="107.5" height="62" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="611.5" y="431" font-size="22" fill="#203D4D" font-weight="600" text-anchor="middle">片段 5</text>
+<rect x="665.0" y="392" width="107.5" height="62" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="719.0" y="431" font-size="22" fill="#203D4D" font-weight="600" text-anchor="middle">片段 6</text>
+<rect x="772.5" y="392" width="107.5" height="62" rx="0" fill="#F0F5F8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="826.5" y="431" font-size="22" fill="#203D4D" font-weight="600" text-anchor="middle">片段 7</text>
+<text x="20" y="491" font-size="25" fill="#183D52" font-weight="600" text-anchor="start">B[70,145] = W[145,70]</text>
+<text x="20" y="529" font-size="23" fill="#627987" font-weight="400" text-anchor="start">块内行索引 17 → 片段 1、片内行 1；列索引 6</text>
+<rect x="20" y="550" width="860" height="42" rx="2" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="450" y="579" font-size="23" fill="#147D89" font-weight="600" text-anchor="middle">3 × 16384 + 1 × 2048 + 1 × 128 + 6 × 2 = 51340 B</text>
+<text x="18" y="638" font-size="18" fill="#627987" font-weight="400" text-anchor="start">n_l 表示 N 片段轴，k_l 在本例中大小为 1；最右侧轴在物理字节流中连续。</text>
+</g></svg>

@@ -1,6 +1,52 @@
 {
   "document_version": "0.0.3",
-  "applicable_document_version": "0.0.4",
+  "applicable_document_version": "0.0.5",
+  "host_layout_updates": {
+    "document_version": "0.0.5",
+    "date": "2026-11-25",
+    "execution": "host_layout_only",
+    "device_execution": false,
+    "status": "PASS",
+    "example": "examples/ldg_layout.py",
+    "example_sha256": "49a6d1e8b4e25cc81fd9e77f2d339ec9d9e2e57a88c8597c44d92bf3f6fd0ad0",
+    "command": ["python3", "examples/ldg_layout.py"],
+    "element_coordinates": 731666,
+    "index_entries_and_copies": 16,
+    "coverage": {
+      "dense_bf16_nk": [[128, 128], [256, 128], [256, 256], [130, 70]],
+      "blocked_bf16_nk": [256, 256],
+      "uscale_n_groups": [[256, 4], [256, 65], [130, 3]],
+      "dedicated_k_and_v_td": [1024, 128],
+      "indexed_k": "Two payload pages in reversed physical order"
+    },
+    "worked_byte_offsets": {
+      "bf16_w_145_70": 51340,
+      "uscale_145_2_groups4": 2242,
+      "indexed_k_token1025_dim0": 32896
+    },
+    "result_sha256": "92702178949095a3f63ce8c897943439350d449cf31c15807b6ad41c8ee5c191",
+    "producer_comparison": {
+      "status": "PASS",
+      "check_groups": 14,
+      "triton_shared": "5b938f82de6e28eb9c08cba3956d6fa3329b481f",
+      "torch_zeus": "b226c6f14712da91c253ddac4e74c573045fe8ab",
+      "functional_source": "caf480853e60207f42ddccd2223fe4a56ea037f0",
+      "coverage": "BF16 Dense, UScale, K/V payload, three INT4 helper cases and two Blocked pack cases",
+      "result_sha256": "23edc9d91b9db345c9d7b9aea7f3a36cee16bd696aea0d524bd8db5182272a8a"
+    },
+    "quantized_and_attention_coordinate_review": {
+      "status": "PASS",
+      "coordinates": 30271,
+      "uscale_n_groups": [[128, 1], [256, 1], [256, 2], [129, 63], [256, 65]],
+      "weight_kv_pool_td": [1024, 256],
+      "weight_kv_slots": [0, 63, 64, 127, 128, 255, 256, 389, 1023],
+      "producer_revision": "c477a34e74e391cf7639571f3ebf27614004807a",
+      "producer_file": "sim_check/sim_framework/weight/transform.py",
+      "producer_file_sha256": "adbd7a07fffe73c36055db43c4183f5e3e603ba21e00d1258c7672a2002c71ae",
+      "result_sha256": "4506fd9f1f934780a3370d66f4319c8187637abfd0108ceae2e3bbf9dc13fc40"
+    },
+    "limits": "Host coordinate checks overlap and are not additive unique coverage. No LocalMem allocation, native pack execution, JIT, device, functional simulation, CycleSim, VCS, performance or full-model execution was added. Historical records below retain their original source identities."
+  },
   "editorial_updates": [
     {
       "file": "examples/matmul.py",

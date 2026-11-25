@@ -52,6 +52,10 @@ def main():
             if name != "Triton-Zeus-Programming-Guide.pdf":
                 errors.append(f"Unexpected third-party or historical PDF: {name}")
             continue
+        if name == "assets/cover-art-v005.png":
+            if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+                errors.append(f"Invalid PNG cover: {name}")
+            continue
         try:
             text = data.decode("utf-8")
         except UnicodeDecodeError:

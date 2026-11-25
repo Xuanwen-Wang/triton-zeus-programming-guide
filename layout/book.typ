@@ -17,9 +17,10 @@
 #set text(font: ("Noto Sans CJK SC", "DejaVu Sans"), size: 10pt, lang: "zh", region: "CN", fill: rgb("#111111"))
 #set par(justify: true, leading: 10.5pt, spacing: 13pt)
 #set page(paper: "a4", margin: (left: 25.4mm, right: 25.4mm, top: 25.4mm, bottom: 24.4mm), header-ascent: 35%, footer-descent: 35%)
-#set list(indent: 0pt, body-indent: 0.8em, spacing: 5pt)
-#set enum(indent: 0pt, body-indent: 0.65em, spacing: 5pt)
-#show enum: set par(leading: 8pt, spacing: 8pt)
+#set list(indent: 0pt, body-indent: 0.8em, spacing: 12pt)
+#set enum(indent: 0pt, body-indent: 0.65em, spacing: 11pt)
+#show list: set par(justify: false, leading: 8.5pt, spacing: 10pt)
+#show enum: set par(justify: false, leading: 8.5pt, spacing: 10pt)
 
 #let folio(pattern) = context {
   line(length: 100%, stroke: 0.5pt + rule-color)
@@ -62,26 +63,41 @@
   figure-prefix.get() + "." + str(n)
 })
 
-#page(margin: (left: 25.4mm, right: 25.4mm, top: 28mm, bottom: 28mm))[
-  #text(size: 12pt, weight: "bold", fill: navy)[TRITON ZEUS]
-  #v(4mm)
-  #line(length: 100%, stroke: 0.7pt + navy)
-  #v(52mm)
-  #align(right)[
-    #text(size: 38pt, weight: "bold", fill: navy)[Triton Zeus]
-    #v(5mm)
-    #text(size: 27pt, weight: "bold", fill: navy)[编程指南]
-    #v(9mm)
-    #text(size: 11pt, fill: muted)[$subtitle$]
+#page(margin: 0pt, fill: rgb("#102d42"), background:
+  image("/assets/cover-art-v005.png", width: 100%, height: 100%, fit: "cover"))[
+  #set par(justify: false, leading: 7pt, spacing: 0pt)
+  #set text(fill: white)
+  #place(top + left, dx: 25.4mm, dy: 21mm)[
+    #text(size: 16pt, weight: "bold")[北极雄芯]
+    #v(3mm)
+    #text(size: 10pt, tracking: 0.25pt, fill: rgb("#c1d8e4"))[Polar Bear Tech]
   ]
-  #v(1fr)
-  #line(length: 100%, stroke: 0.5pt + rule-color)
-  #v(6mm)
-  #text(size: 11pt, weight: "bold", fill: navy)[$edition$]
-  #v(3mm)
-  #text(size: 10pt, fill: muted)[$date$]
-  #v(7mm)
-  #text(size: 10pt, fill: navy)[北极雄芯信息科技（西安）有限公司]
+  #place(top + left, dx: 25.4mm, dy: 65mm)[
+    #block(width: 159mm)[
+      #text(size: 9pt, tracking: 1.6pt, fill: rgb("#91c9df"))[PROGRAMMING GUIDE]
+      #v(7mm)
+      #text(size: 43pt, weight: "bold")[Triton Zeus]
+      #v(6mm)
+      #text(size: 29pt, weight: "bold")[编程指南]
+      #v(8mm)
+      #text(size: 10pt, fill: rgb("#c1d8e4"))[$subtitle$]
+    ]
+  ]
+  #place(top + left, dx: 25.4mm, dy: 261mm)[
+    #block(width: 159mm)[
+      #line(length: 100%, stroke: 0.5pt + rgb("#52778b"))
+      #v(5mm)
+      #grid(columns: (1fr, auto), gutter: 20pt,
+        text(size: 13pt, weight: "bold")[$version$],
+        text(size: 10pt, fill: rgb("#c1d8e4"))[$date$],
+      )
+      #v(6mm)
+      #text(size: 9pt)[北极雄芯信息科技（西安）有限公司]
+      #v(2mm)
+      #text(size: 8.5pt, fill: rgb("#c1d8e4"), "Polar Bear Tech (Xi'an) Co., Ltd")
+    ]
+  ]
+  #box(width: 1pt, height: 1pt)
 ]
 
 #set page(
@@ -110,12 +126,13 @@ $for(include-before)$
 $include-before$
 $endfor$
 #pagebreak()
-#heading(outlined: false, numbering: none)[目录]
+#heading(outlined: false, bookmarked: true, numbering: none)[目录]
 #v(3mm)
 #show outline.entry: entry => context {
-  let chapter = entry.level == 1
-  set text(size: 9.5pt, weight: if chapter { "bold" } else { "regular" })
-  set par(leading: 5pt, spacing: 5pt)
+  let chapter = entry.element.func() == heading and entry.level == 1
+  set text(size: if chapter { 10.3pt } else { 9.8pt },
+    tracking: 0.015em, weight: if chapter { "bold" } else { "regular" })
+  set par(justify: false, leading: 8pt, spacing: 0pt)
   // Resolve a figure's chapter prefix at its source, not at the list of figures.
   let prefix = if entry.element.func() == figure {
     let item = entry.element
@@ -125,19 +142,21 @@ $endfor$
     [#supplement #figure-prefix.at(loc).#n]
   } else { entry.prefix() }
   let number = if prefix != none { text(fill: teal, prefix) }
-  let title = text(fill: navy, entry.body())
-  let leaders = box(width: 1fr, repeat(gap: 4pt, justify: false)[.])
+  let title = text(fill: if chapter { navy } else { rgb("#263b48") }, entry.body())
+  let leaders = box(width: 1fr, repeat(gap: 3.5pt, justify: false,
+    text(size: 7pt, fill: rgb("#9baeba"))[·]))
   let body = title + h(0.55em) + leaders + h(0.55em) + entry.page()
-  block(above: if chapter { 9pt } else { 4pt }, below: 0pt, breakable: false,
+  block(above: if chapter { 15pt } else { 8pt }, below: 0pt, breakable: false,
+    sticky: entry.element.func() == heading and entry.level < 3,
     link(entry.element.location(), entry.indented(number, body)))
 }
 #outline(title: none, depth: 3, indent: 1.6em)
 #pagebreak()
-#heading(outlined: false, numbering: none)[插图目录]
+#heading(outlined: false, bookmarked: true, numbering: none)[插图目录]
 #v(3mm)
 #outline(title: none, target: figure.where(kind: image))
 #pagebreak()
-#heading(outlined: false, numbering: none)[表格目录]
+#heading(outlined: false, bookmarked: true, numbering: none)[表格目录]
 #v(3mm)
 #outline(title: none, target: figure.where(kind: table))
 #pagebreak()

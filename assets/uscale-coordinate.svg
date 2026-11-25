@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="490" viewBox="0 0 900 490">
+<title>UScale 系数 S[145,0] 到物理字节偏移</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">N=256 · K=128 · G=128 · 每通道一个 BF16 系数</text>
+<rect x="20" y="62" width="206" height="82" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="123.0" y="98.0" font-size="22" fill="#183D52" font-weight="600" text-anchor="middle">S[145, 0]</text>
+<text x="123.0" y="128.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">逻辑通道 145，K 组 0</text>
+<polyline points="232,103 274,103" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="282" y="62" width="310" height="82" rx="8" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="437.0" y="98.0" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">145 = 128×1 + 16×1 + 1</text>
+<text x="437.0" y="128.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">band 1 · lane 1 · row 1</text>
+<polyline points="599,103 641,103" fill="none" stroke="#627987" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="650" y="62" width="230" height="82" rx="8" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="765.0" y="98.0" font-size="20" fill="#183D52" font-weight="600" text-anchor="middle">段号 = 1×1 + 0 = 1</text>
+<text x="765.0" y="128.0" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">段内索引 row=1</text>
+<text x="20" y="198" font-size="22" fill="#183D52" font-weight="600" text-anchor="start">物理页 0：八路各占 2 KiB，合计 16 KiB</text>
+<rect x="20.0" y="220" width="107.5" height="66" rx="0" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="73.75" y="248" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 0</text>
+<text x="73.75" y="273" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="127.5" y="220" width="107.5" height="66" rx="0" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="181.25" y="248" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 1</text>
+<text x="181.25" y="273" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="235.0" y="220" width="107.5" height="66" rx="0" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="288.75" y="248" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 2</text>
+<text x="288.75" y="273" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="342.5" y="220" width="107.5" height="66" rx="0" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="396.25" y="248" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 3</text>
+<text x="396.25" y="273" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="450.0" y="220" width="107.5" height="66" rx="0" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="503.75" y="248" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 4</text>
+<text x="503.75" y="273" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="557.5" y="220" width="107.5" height="66" rx="0" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="611.25" y="248" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 5</text>
+<text x="611.25" y="273" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="665.0" y="220" width="107.5" height="66" rx="0" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="718.75" y="248" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 6</text>
+<text x="718.75" y="273" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<rect x="772.5" y="220" width="107.5" height="66" rx="0" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="826.25" y="248" font-size="19" fill="#183D52" font-weight="600" text-anchor="middle">lane 7</text>
+<text x="826.25" y="273" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">2 KiB</text>
+<polyline points="181,292 181,328 291,328 291,351" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="20" y="335" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">展开 lane 1</text>
+<rect x="20" y="359" width="205" height="60" rx="0" fill="#E7F3F3" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="225" y="359" width="205" height="60" rx="0" fill="#FFF2DC" stroke="#B6CBD5" stroke-width="1.5"/>
+<rect x="430" y="359" width="450" height="60" rx="0" fill="#F2F4F6" stroke="#B6CBD5" stroke-width="1.5"/>
+<text x="122" y="384" font-size="18" fill="#183D52" font-weight="600" text-anchor="middle">段 0：n=16…31</text>
+<text x="122" y="407" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">lane 内 [0,32) B</text>
+<text x="327" y="384" font-size="18" fill="#183D52" font-weight="600" text-anchor="middle">段 1：n=144…159</text>
+<text x="327" y="407" font-size="17" fill="#627987" font-weight="400" text-anchor="middle">lane 内 [32,64) B</text>
+<text x="655" y="393" font-size="18" fill="#627987" font-weight="400" text-anchor="middle">补齐至 2 KiB（示意不按比例）</text>
+<text x="20" y="460" font-size="22" fill="#147D89" font-weight="600" text-anchor="start">S[145,0]：0×16384 + 1×2048 + 1×32 + 1×2 = 2082 B</text>
+</g></svg>

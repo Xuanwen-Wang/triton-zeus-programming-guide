@@ -311,8 +311,61 @@ def uscale_allocation():
     d.save("uscale-allocation.svg")
 
 
+def vp_pipeline():
+    d = Diagram(676, "单个 VP 的两组 32 lane：宽模式与级联模式")
+    d.label(20, 30, "单 VP 放大 · 相同硬件的两种数据路径", NAVY)
+    for x, title, subtitle in [
+        (20, "宽模式 · 两组并行", "不同元素使用相同运算配置"),
+        (460, "级联模式 · 前后接续", "同一批元素经过两段运算"),
+    ]:
+        d.rect(x, 66, 420, 530, "#ffffff", LINE, r=4)
+        d.text(x+210, 105, title, 25, NAVY, 600, "middle")
+        d.text(x+210, 135, subtitle, 20, MUTED, anchor="middle")
+
+    d.box(48, 157, 364, 70, "x[0] … x[63]",
+          "64 个 BF16 元素", PALE, size=24)
+    d.box(488, 157, 364, 70, "x[0] … x[31]",
+          "32 个 BF16 元素", PALE, size=24)
+
+    # Wide mode sends separate element ranges through equal configurations.
+    d.path([(230, 227), (230, 251)], arrow=False)
+    for cx, first, last, name, fill, color in [
+        (130, 0, 31, "A", AQUA, TEAL),
+        (330, 32, 63, "B", PALE, BLUE),
+    ]:
+        d.path([(230, 251), (cx, 251), (cx, 296)], color=color)
+        d.rect(cx-82, 296, 164, 122, fill, LINE)
+        d.text(cx, 328, f"x[{first}] … x[{last}]", 20,
+               color, anchor="middle")
+        d.text(cx, 363, f"组 {name} · 32 lane", 21,
+               NAVY, 600, "middle")
+        d.text(cx, 398, "f(x)", 24, INK, anchor="middle")
+        d.path([(cx, 418), (cx, 464), (230, 464)],
+               color=color, arrow=False)
+    d.path([(230, 464), (230, 504)])
+    d.box(48, 504, 364, 65, "y[0] … y[63]",
+          "y = f(x) · 64 个元素", AQUA, size=24)
+
+    # Cascaded mode preserves element identity across the two groups.
+    d.path([(670, 227), (670, 257)], color=TEAL)
+    d.box(562, 257, 216, 86, "组 A · 32 lane",
+          "u = f(x)", AQUA, TEAL, size=23)
+    d.path([(670, 343), (670, 385)], color=BLUE)
+    d.text(692, 371, "u[0] … u[31]", 19, BLUE)
+    d.box(562, 385, 216, 86, "组 B · 32 lane",
+          "y = g(u)", PALE, BLUE, size=23)
+    d.path([(670, 471), (670, 504)], color=BLUE)
+    d.box(488, 504, 364, 65, "y[0] … y[31]",
+          "y = g(f(x)) · 32 个元素", AQUA, size=24)
+
+    d.text(20, 632, "每核有 4 个独立 VP；本图只展开其中 1 个。",
+           22, NAVY, 600)
+    d.note("以可用的 BF16 单输入路径为例；箭头表示数据依赖，不表示一拍完成。")
+    d.save("vp-pipelines.svg")
+
+
 def main():
-    for fn in [system_overview, near_memory, dense_blocked, ldg_layout, kv_update, attention_slots,
+    for fn in [system_overview, near_memory, vp_pipeline, dense_blocked, ldg_layout, kv_update, attention_slots,
                paged_attention, online_softmax, matmul_reuse,
                int4_packing, uscale_allocation]:
         fn()

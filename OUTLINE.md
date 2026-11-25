@@ -1,4 +1,4 @@
-# Triton Zeus 编程指南 v0.0.4 章节索引
+# Triton Zeus 编程指南 v0.0.5 章节索引
 
 网页版与 PDF 共用以下正文。章节顺序由 `book.yaml` 管理。
 
@@ -20,7 +20,6 @@
 - 安装和检查环境
 - 第一个向量加法
 - 编译、运行与检查输出
-- 改变长度并定位第一个错误
 
 ## 3 Zeus 硬件与近存架构
 
@@ -35,10 +34,11 @@
 
 源文件：[03a-ldg-memory.md](chapters/03a-ldg-memory.md)
 
-- 3D DRAM 与矩阵数据访问
-- 从权重常驻到可变状态
+- 从 K×N 逻辑矩阵划分 miniblock
+- 将块划分写成七维变换
+- Dense、Blocked 与 PATCH
+- 数值格式与 UScale 物理页
 - 地址、指针表和描述符
-- BF16 普通布局的完整推导
 - 准备与写入 LDG
 - KV Cache 的两种编程契约
 - 专用 K/V 页与索引表

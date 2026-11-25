@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="590" viewBox="0 0 900 590">
+<title>B[128,256] 与 W[256,128] 的四个 BF16 miniblock</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#627987"/></marker></defs>
+<g font-family="Noto Sans CJK SC, sans-serif">
+<text x="20" y="30" font-size="20" fill="#183D52" font-weight="600" text-anchor="start">BF16 · B[K,N] 与 W[N,K] 保存同一组元素</text>
+<text x="20" y="80" font-size="24" fill="#183D52" font-weight="600" text-anchor="start">数学视图 B[128,256]</text>
+<rect x="20" y="128" width="165" height="85" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="102" y="177.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 0</text>
+<rect x="185" y="128" width="165" height="85" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="267" y="177.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 2</text>
+<rect x="20" y="213" width="165" height="85" rx="0" fill="#dfeaf5" stroke="#ffffff" stroke-width="1.5"/>
+<text x="102" y="262.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 1</text>
+<rect x="185" y="213" width="165" height="85" rx="0" fill="#ece5f4" stroke="#ffffff" stroke-width="1.5"/>
+<text x="267" y="262.5" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 3</text>
+<text x="102" y="112" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">N: 0–127</text>
+<text x="267" y="112" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">N: 128–255</text>
+<text x="20" y="330" font-size="20" fill="#627987" font-weight="400" text-anchor="start">每行组 64 个 K</text>
+<text x="530" y="80" font-size="24" fill="#183D52" font-weight="600" text-anchor="start">存储视图 W[256,128]</text>
+<rect x="530" y="128" width="165" height="110" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="612" y="190.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 0</text>
+<rect x="695" y="128" width="165" height="110" rx="0" fill="#dfeaf5" stroke="#ffffff" stroke-width="1.5"/>
+<text x="777" y="190.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 1</text>
+<rect x="530" y="238" width="165" height="110" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="612" y="300.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 2</text>
+<rect x="695" y="238" width="165" height="110" rx="0" fill="#ece5f4" stroke="#ffffff" stroke-width="1.5"/>
+<text x="777" y="300.0" font-size="21" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 3</text>
+<text x="612" y="112" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">K: 0–63</text>
+<text x="777" y="112" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">K: 64–127</text>
+<text x="530" y="380" font-size="20" fill="#627987" font-weight="400" text-anchor="start">每行组 128 个 N</text>
+<polyline points="365,224 495,224" fill="none" stroke="#147D89" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="430" y="199" font-size="23" fill="#147D89" font-weight="600" text-anchor="middle">W = Bᵀ</text>
+<text x="430" y="261" font-size="20" fill="#627987" font-weight="400" text-anchor="middle">坐标视图</text>
+<text x="20" y="421" font-size="23" fill="#183D52" font-weight="600" text-anchor="start">物理字节流：先遍历同一 N 分组的 K 块，再切换 N 分组</text>
+<rect x="20" y="449" width="215" height="68" rx="0" fill="#E7F3F3" stroke="#ffffff" stroke-width="1.5"/>
+<text x="127" y="491" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 0</text>
+<text x="20" y="547" font-size="20" fill="#627987" font-weight="400" text-anchor="start">0</text>
+<rect x="235" y="449" width="215" height="68" rx="0" fill="#dfeaf5" stroke="#ffffff" stroke-width="1.5"/>
+<text x="342" y="491" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 1</text>
+<text x="235" y="547" font-size="20" fill="#627987" font-weight="400" text-anchor="start">16384</text>
+<rect x="450" y="449" width="215" height="68" rx="0" fill="#FFF2DC" stroke="#ffffff" stroke-width="1.5"/>
+<text x="557" y="491" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 2</text>
+<text x="450" y="547" font-size="20" fill="#627987" font-weight="400" text-anchor="start">32768</text>
+<rect x="665" y="449" width="215" height="68" rx="0" fill="#ece5f4" stroke="#ffffff" stroke-width="1.5"/>
+<text x="772" y="491" font-size="23" fill="#183D52" font-weight="600" text-anchor="middle">miniblock 3</text>
+<text x="665" y="547" font-size="20" fill="#627987" font-weight="400" text-anchor="start">49152</text>
+<text x="880" y="547" font-size="20" fill="#627987" font-weight="400" text-anchor="end">65536 B</text>
+<text x="18" y="578" font-size="18" fill="#627987" font-weight="400" text-anchor="start">一个 miniblock：B 的 64×128 元素 = W 的 128×64 元素 = 16 KiB。</text>
+</g></svg>
