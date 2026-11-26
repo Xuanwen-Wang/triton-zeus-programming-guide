@@ -33,14 +33,20 @@ def softmax_fp32(
     count = quotient + tl.where(core < remainder, 1, 0)
     start = core * quotient + tl.minimum(core, remainder)
     source = tl.make_block_ptr(
-        base=input_ptr, shape=(num_tokens, hidden_size),
-        strides=(hidden_size, 1), offsets=(0, 0),
-        block_shape=(BLOCK_TOKENS, BLOCK_HIDDEN), order=(1, 0),
+        base=input_ptr,
+        shape=(num_tokens, hidden_size),
+        strides=(hidden_size, 1),
+        offsets=(0, 0),
+        block_shape=(BLOCK_TOKENS, BLOCK_HIDDEN),
+        order=(1, 0),
     )
     target = tl.make_block_ptr(
-        base=output_ptr, shape=(num_tokens, hidden_size),
-        strides=(hidden_size, 1), offsets=(0, 0),
-        block_shape=(BLOCK_TOKENS, BLOCK_HIDDEN), order=(1, 0),
+        base=output_ptr,
+        shape=(num_tokens, hidden_size),
+        strides=(hidden_size, 1),
+        offsets=(0, 0),
+        block_shape=(BLOCK_TOKENS, BLOCK_HIDDEN),
+        order=(1, 0),
     )
     for index in range(count):
         row = (start + index) * BLOCK_TOKENS
@@ -93,7 +99,7 @@ def run_device(x):
         output, source, rows, width, **constants,
         zeus_enable_jit=True,
     )
-    torch.zeus.synchronize()
+    torch.zeus.synchronize(output.device)
     return output.cpu()
 
 

@@ -344,39 +344,52 @@ CPU 参考使用已经转换为 BF16 的 A、W，提升到 FP32 做矩阵乘，�
 python examples/matmul.py --m 256 --n 256 --k 384
 ```
 
-这个模块的命令行只计算 CPU 参考，没有 `--run-device` 参数。下面的 SDK 宿主示例展示完整调用：将两段代码顺序保存为脚本，从随书根目录运行。先建立 BF16 输入，再按本核的普通 weight 格式准备 W；其中 `packed` 是拥有存储的 LocalMem 对象。
+在满足 [JIT 前置条件](#setup-environment)的 SDK 中，使用随书脚本验证固定形状。
+
+```bash
+ZECC_KERNEL_MODE=jit python examples/matmul.py --run-device
+```
+
+下面两段可依次保存为脚本，从随书根目录运行。先选定 `zeus:0`，在 CPU 准备 BF16 输入，再按普通 Weight 格式把 W 写入该设备核 0 的 LocalMem。
 
 ```python
 import torch
 import torch_zeus
 from examples.matmul import matmul_bf16, constants, reference
 
+device = torch.device("zeus:0")
 m, n, k = 256, 256, 384
 gen = torch.Generator().manual_seed(20261124)
 a_host = torch.randn(m, k, generator=gen).to(torch.bfloat16)
 w_host = torch.randn(n, k, generator=gen).to(torch.bfloat16)
-a = a_host.to("zeus:0")
-out = torch.empty((m, n), dtype=torch.bfloat16, device="zeus:0")
-packed = torch.zeus.local_memory.from_tensor(
-    w_host, kind="weight", Tr=1, Tc=1, core_id=0,
-)
+with torch.zeus.device(device):
+    a = a_host.to(device)
+    out = torch.empty((m, n), dtype=torch.bfloat16, device=device)
+    packed = torch.zeus.local_memory.from_tensor(
+        w_host, kind="weight", Tr=1, Tc=1, core_id=0,
+    )
 ```
 
+接着启动单核 kernel，等待所选设备完成，再对拍读回结果。
+
 ```python
-matmul_bf16[(1,)](
-    a, packed, out, m, k, n,
-    **constants, zeus_enable_jit=True,
-)
-torch.zeus.synchronize(0)
+with torch.zeus.device(device):
+    matmul_bf16[(1,)](
+        a, packed, out, m, k, n,
+        **constants, zeus_enable_jit=True,
+    )
+    torch.zeus.synchronize(device)
 actual = out.cpu()
 expected = reference(a_host, w_host)
-torch.testing.assert_close(
-    actual, expected, rtol=1e-2, atol=1e-2,
-)
+torch.testing.assert_close(actual, expected, rtol=1e-2, atol=1e-2)
 print("max_abs_error=", (actual.float() - expected.float()).abs().max())
 ```
 
-启动 grid 和 `constants["CORE_NUM"]` 都为 1；`packed`、A 与输出必须保持有效直到执行完成。参考直接使用同一份 BF16 输入，执行 FP32 矩阵乘后转换为 BF16。上述容差是有限随机输入的初始检查条件，不保证任意数据范围都满足；业务接入应按误差预算固定阈值，并保留最坏误差位置。若要求按位一致，还需对齐 dot 与归约顺序。该宿主封装的接口与布局已核对，随书检查不包含它在物理设备上的执行结果。
+启动 grid 为 `(1,)`，`constants["CORE_NUM"]` 为 1。A、权重 owner `packed` 和输出存活到设备同步完成。CPU 参考从同一份 BF16 输入计算并转换输出，`rtol=1e-2, atol=1e-2` 是这组有限随机输入的初始容差。其他业务输入按其误差预算验证。如果要求按位一致，还需核对 dot 的累加与归约顺序。
+
+本形状的随书测试使用预编译设备程序进行功能仿真。客户 SDK 包中的宿主 JIT 调用应另外保存实际运行结果。
+
+:::: {.keep}
 
 ### 优化顺序
 
@@ -385,6 +398,8 @@ print("max_abs_error=", (actual.float() - expected.float()).abs().max())
 ::: {.tip}
 先用单缓冲获得正确、可复现的基线，再改写预取和缓冲复用。`--enable-double-buffer` 与 `double_buffer_hint()` 是尚不完善的实验性自动功能，暂不推荐作为本例的优化入口。
 :::
+
+::::
 
 ::: {.keep}
 ## Fused Add RMSNorm {#fused-add-rmsnorm-example}
@@ -437,6 +452,8 @@ tl.store(input_block_ptr, output.to(tl.bfloat16),
 
 第一遍不能在计算平方和之后再把 residual 转 BF16。否则平方和使用的是尚未舍入的和，第二遍读取的却是 BF16 residual，两个阶段内部已经不一致。正确顺序是“加法→BF16 转换→写回与平方和”，两个消费者看到同一个值。
 
+::: {.keep}
+
 ### 原地更新的别名边界
 
 两个输入使用不同变量名不等于不同存储。若 X 与 R 指向同一块内存，先写 residual 再写归一化输出会让最终可见的两个输出重叠；接口也无法同时保留 Y 和 $R'$。随书封装要求两份独立存储。部分重叠的切片更难处理，应同样拒绝，除非实现明确支持并验证了该别名模式。
@@ -454,3 +471,5 @@ python examples/fused_add_rmsnorm.py \
 ```
 
 对 `(output, residual)` 分别报告最大误差：归一化沿用 RMSNorm 对有限随机输入的容差，residual 与独立 BF16 Add 逐元素比较，`atol=rtol=0`。补测全零、相消及正负混合的 X/R，检查残差转换位置。性能对照保持相同环境、向量加法与 FP32 RMSNorm；每轮恢复原始 X/R，kernel 计时排除恢复副本和结果回读，端到端计时按业务边界确定。
+
+:::

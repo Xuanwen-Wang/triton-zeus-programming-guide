@@ -1,6 +1,6 @@
 # Triton Zeus 编程指南
 
-面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Zeus 编程接口、算子开发与性能优化。当前版本 **v0.0.6**，共 186 页，包括 14 章、附录 A–D、33 张正文矢量图和 8 个完整 kernel 示例。第四章先给出布局总览，再分别介绍 Weight 与分页 KV Cache。
+面向 Zeus V3 的中文编程指南，介绍 LDG 3D DRAM 近存架构、数据布局、Zeus 编程接口、算子开发与性能优化。当前版本 **v0.0.6**，共 183 页，包括 14 章、附录 A–D、33 张正文矢量图和 8 个完整 kernel 示例。第四章先给出布局总览，再分别介绍 Weight 与分页 KV Cache。
 
 **[在线阅读 / 下载 PDF](https://xuanwen-wang.github.io/triton-zeus-programming-guide/Triton-Zeus-Programming-Guide.pdf)** · [章节索引](OUTLINE.md) · [版本记录](CHANGELOG.md)
 
@@ -22,13 +22,14 @@
 
 ## 运行示例
 
-安装配套的 Zeus SDK、PyTorch 和 Triton 后，向量加法可以从普通 Python 入口执行：
+PDF 内嵌同版 `Triton-Zeus-Examples-v0.0.6.zip`。用支持 PDF 附件的阅读器保存并解压，或使用仓库的 [`examples/`](examples/) 目录。设备执行所需的 Zeus SDK、PyTorch、Triton 和配套组件版本以产品交付清单为准。安装并完成后端配置后，从随书目录运行环境检查和向量加法：
 
 ```bash
-python examples/vector_add.py --numel 2500 --run-device
+python examples/check_environment.py --require-jit
+ZECC_KERNEL_MODE=jit python examples/vector_add.py --numel 2500 --run-device
 ```
 
-`--run-device` 调用已安装的 Zeus 运行时；实际连接功能模拟还是真实设备，取决于该环境的运行时配置。不加此参数时只运行 CPU 数学参考。用户无需自行编写内部仿真测试脚本；输出与 PyTorch 参考的比较由示例完成。环境配置和常见错误见第 2、8 章。
+`--run-device` 调用已安装的 Zeus 运行时并与 PyTorch 参考比较，实际后端由 SDK 配置决定。默认命令只运行 CPU 数学参考。环境配置和常见错误见第 2、8 章，各示例的输入与执行范围见[随书示例说明](examples/README.md)。
 
 LDG 矩阵乘和 KV Cache 示例还需要配套的资源分配与 pack 接口，不能用普通 Tensor 地址替代 LDG 地址表。第 4、11–13 章说明相关宿主代码与资源生命周期。
 
@@ -79,7 +80,7 @@ python3 examples/ldg_layout.py
 
 ## 验证范围
 
-[验证摘要](validation-summary.json)保留示例编译、CPU 数学参考、宿主布局与 Python 功能仿真的结果及输入身份，具体范围见[本版审阅记录](RELEASE-REVIEW.md)。本轮修订未新增物理设备、CycleSim、VCS/RTL、性能或整模型执行结果。理论带宽和算力的适用条件在正文中单独说明。
+本轮修订通过 8 项离线编译、15 项 CPU 数学参考、11 项 Host 布局参考和 16 项 Python 功能仿真。验证结果及输入身份见[验证摘要](validation-summary.json)的 `customer_review_update`，测试条件见[本版审阅记录](RELEASE-REVIEW.md)。客户 SDK 的 JIT、AOT、Graph 与物理设备执行待在配套环境验证。理论带宽和算力的适用条件在正文中单独说明。
 
 ## 反馈与权利声明
 

@@ -3,18 +3,31 @@
 
 import argparse
 import hashlib
+from io import BytesIO
 import json
 import os
 import re
 import shutil
 import subprocess
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def example_bundle(paths):
+    """Keep a deterministic copy of the matching sources inside the PDF."""
+    content = BytesIO()
+    with ZipFile(content, "w") as archive:
+        for path in paths:
+            entry = ZipInfo(path.relative_to(ROOT).as_posix())
+            entry.external_attr = 0o100644 << 16
+            archive.writestr(entry, path.read_bytes(), ZIP_DEFLATED, compresslevel=9)
+    return content.getvalue()
 
 
 def main():
@@ -69,8 +82,9 @@ def main():
     output = Path(args.output)
     if not output.is_absolute():
         output = ROOT / output
-    epoch_match = re.search(r"^source-date-epoch:\s*(\d+)\s*$",
-                            (ROOT/"book.yaml").read_text(), re.MULTILINE)
+    book = (ROOT / "book.yaml").read_text()
+    version = re.search(r"^version:\s*(v[0-9.]+)\s*$", book, re.MULTILINE).group(1)
+    epoch_match = re.search(r"^source-date-epoch:\s*(\d+)\s*$", book, re.MULTILINE)
     if not epoch_match:
         raise SystemExit("book.yaml must declare source-date-epoch for reproducible metadata")
     result = subprocess.run([typst, "compile", "--root", str(ROOT), "--font-path", "assets/fonts",
@@ -86,9 +100,23 @@ def main():
     # when a PDF reader supports the catalog's PageMode preference.
     import pypdf
     from pypdf import PdfReader, PdfWriter
-    writer = PdfWriter(clone_from=PdfReader(output))
+    from pypdf.generic import BooleanObject
+    examples = sorted((ROOT / "examples").glob("*.py")) + [ROOT / "examples/README.md"]
+    bundle_name = f"Triton-Zeus-Examples-{version}.zip"
+    bundle = example_bundle(examples)
+    original = PdfReader(output)
+    writer = PdfWriter(clone_from=original)
+    writer.pdf_header = original.pdf_header
+    mark_info = writer.root_object.get("/MarkInfo")
+    if mark_info is not None:
+        mark_info = mark_info.get_object()
+        suspects = mark_info.get("/Suspects")
+        # False is the PDF default. Older viewers can misread the explicit flag.
+        if isinstance(suspects, BooleanObject) and not suspects.value:
+            del mark_info["/Suspects"]
     writer.page_mode = "/UseOutlines"
     writer.page_layout = "/OneColumn"
+    writer.add_attachment(bundle_name, bundle)
     staged = output.with_suffix(".navigation.pdf")
     with staged.open("wb") as stream:
         writer.write(stream)
@@ -102,18 +130,22 @@ def main():
     inputs += chapter_paths + sorted(p for p in (ROOT / "assets").iterdir()
                                     if p.suffix in {".svg", ".png", ".jpg"})
     inputs += sorted((ROOT / "assets/fonts").glob("*.ttf"))
-    inputs += sorted((ROOT / "examples").glob("*.py"))
+    inputs += examples
     if (ROOT / "validation-summary.json").is_file():
         inputs.append(ROOT / "validation-summary.json")
     final_reader = PdfReader(output)
     manifest = {
         "pdf": str(output.relative_to(ROOT)), "sha256": digest(output),
-        "version": re.search(r"^version:\s*(v[0-9.]+)\s*$",
-                             (ROOT / "book.yaml").read_text(), re.MULTILINE).group(1),
+        "version": version,
         "page_count": len(final_reader.pages),
         "pandoc": subprocess.check_output(["pandoc", "--version"], text=True).splitlines()[0],
         "typst": subprocess.check_output([typst, "--version"], text=True).strip(),
         "pypdf": pypdf.__version__,
+        "example_bundle": {
+            "name": bundle_name,
+            "sha256": hashlib.sha256(bundle).hexdigest(),
+            "files": [path.relative_to(ROOT).as_posix() for path in examples],
+        },
         "inputs": {str(p.relative_to(ROOT)): digest(p) for p in inputs},
     }
     (build / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+"\n")

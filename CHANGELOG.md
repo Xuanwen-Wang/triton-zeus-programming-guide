@@ -7,13 +7,18 @@
 更新日期：2026-11-25。
 
 - 补充 GDG、LDG 的设计容量及可分配容量边界；GDG 和 L2 Buffer–LDG 读写统一采用 51.2 GB/s。
-- 区分 Zeus V3 的约 2.14 TB/s credit 模型与未来 Zeus V3 PRO 的两拍 miniblock 模型；移除 WL1–PE 端口容量叠加项。
+- 说明 Zeus V3 连续读条件下的约 2.14 TB/s credit 模型与稳态出数间隔，保留 Zeus V3 PRO（518PRO）的矩阵读取设计规格。移除 WL1–PE 端口容量叠加项。
 - 重组第四章为布局概览、miniblock、Weight、分页 KV、数据准备与排错六节；将矩阵坐标及七维变换并入 Weight 布局，UScale 作为 Weight 的配套资源介绍。
 - 新增布局分类、miniblock 八路 WL1 关系与三种 Weight 排列对照图；区分矩阵尾部补齐、Blocked 块间 padding 与基址对齐。
 - 明确专用 kcache/vcache 不接受 weight_dtype、ugroup、uscale 反量化参数；同步第七、十二、十三章的接口边界。
 - 将第 7 章改为“Zeus 编程接口”，集中说明特殊 load/store、量化与分页、专用计算、hints 和提前退出。
 - 全文统一自动双缓冲的实验性状态，暂不推荐使用；说明在 kernel 中显式组织预取与双工作区的方式。
 - 明确静态 weight/scale 必须在 launch 前写入 LDG，以及动态 KV 的 LW 布局转换或手动排布后分段 ST 两条路径。
+- 正文与随书示例逐项标明 `tl.make_block_ptr` 的六个参数。专用 K/V 追加片段分别构造 K 和 V 的目标块指针。
+- 扩展单页版权声明，明确担保、责任限制、示例使用及合同范围。PDF 附同版示例与使用说明，增加 SDK 前置检查和分层验证记录。
+- 修正尾块保护区和分页 KV 算例，补 partial/LSE 比较、空分片处理、UScale 页配对及适用条件。
+- 提供固定形状 BF16 Matmul 的 SDK 入口和完整宿主调用片段、INT4 单槽位生成和两组 Graph 重放。区分独立输出 tile 流水与 K 循环累加。
+- 正文目录显示两级，PDF 保留详细书签。核对命名跳转、附件字节和重点插图替代说明。
 - 增加橙色“注意”、青色“提示”和蓝色“注解”，突出平台差异和关键约束；保留仓库最新的铜版线刻封面。
 - 同步 README、章节索引与审阅记录；新增 AGENTS.md，明确技术事实、图表、PDF 逐页审阅及发布维护流程，并更新贡献说明。
 

@@ -163,7 +163,7 @@ Store 的 mask 只允许有效元素写回。填充位置可以参与中间向�
 
 ### 块指针
 
-块指针将 base、完整 shape、stride、tile 起点和 tile shape 组织成一个对象，适合表达规则的块状访问。贯穿案例使用一维块指针，随后通过 `tl.advance` 推进 tile。
+块指针用六个参数描述规则的块状访问。贯穿案例先建立一维块指针，再用 `tl.advance` 推进 tile。
 
 ```python
 x_block = tl.make_block_ptr(
@@ -182,7 +182,7 @@ x = tl.load(
 next_block = tl.advance(x_block, (BLOCK,))
 ```
 
-`shape` 是整个被访问张量的边界，`block_shape` 是当前 tile 的静态尺寸。`offsets` 表示 tile 的起点，`strides` 表示各维步长。`order` 描述块访问的维度顺序，不会替读者转置宿主数据或修正错误 stride。
+`base` 指向所描述张量的坐标原点。`shape` 给出完整逻辑边界，`block_shape` 给出当前 tile 的静态尺寸。`strides` 和 `offsets` 逐维给出元素步长与起点坐标。`order` 描述块访问的维度顺序，例如连续行主序二维数据使用 `order=(1, 0)`。
 
 块指针的边界通过 `boundary_check` 指定需要检查的维度。若尾块数据还要参与求和或矩阵乘，应明确使用零填充；不要依赖无效位置的未定义内容。块指针访问与普通指针张量的 mask 写法是两套接口，不能把两套边界参数混在同一次 load/store 中。
 

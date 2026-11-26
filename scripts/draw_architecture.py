@@ -179,30 +179,30 @@ def kv_update():
 
 def attention_slots():
     d = Diagram(645, "普通 weight 布局中的 K 行写入与 V 列写入")
-    d.label(20, 30, "slot=389 · D=256 · R=1024 · 物理 block=128×64 BF16", NAVY)
+    d.label(20, 30, "slot=645 · D=256 · R=1024 · 物理 block=128×64 BF16", NAVY)
     d.text(20, 75, "K[R,D]：一行拆成 4 段", 22, NAVY, 600)
     for j in range(4):
         xx=25+j*218
         d.rect(xx, 105, 194, 145, "#edf2f6", r=1)
         d.rect(xx, 134, 194, 12, AQUA, TEAL, r=0)
-        d.text(xx+97, 194, f"block {12+j}", 22, NAVY, 600, "middle")
+        d.text(xx+97, 194, f"block {20+j}", 22, NAVY, 600, "middle")
         d.text(xx+97, 224, "128 行 × 64 列", 17, MUTED, anchor="middle")
-    d.text(25, 286, "row_block=3，row_in_block=5；每段写 64 个 BF16 元素。", 20)
+    d.text(25, 286, "row_block=5，row_in_block=5；每段写 64 个 BF16 元素。", 20)
     d.text(20, 344, "V[D,R]：一列拆成 2 段", 22, NAVY, 600)
-    for j, block in enumerate([6,22]):
+    for j, block in enumerate([10, 26]):
         xx=25+j*436
         d.rect(xx, 372, 400, 145, "#edf2f6", r=1)
         d.rect(xx+31, 372, 12, 145, AQUA, TEAL, r=0)
         d.text(xx+226, 434, f"block {block}", 23, NAVY, 600, "middle")
         d.text(xx+226, 470, "128 行 × 64 列", 19, MUTED, anchor="middle")
-    d.text(25, 555, "col_block=6，col_in_block=5；每段写 128 个 BF16 元素。", 20)
+    d.text(25, 555, "col_block=10，col_in_block=5；每段写 128 个 BF16 元素。", 20)
     d.note("普通 weight 路径：K 页内沿用 normal；V 不同于专用 vcache。分页寻址另有契约。")
     d.save("attention-slots.svg")
 
 
 def paged_attention():
     d = Diagram(590, "页表从逻辑 token 到物理槽位的映射")
-    d.label(20, 30, "block_table=[3,1] · page_size=256 · seq_len=390", NAVY)
+    d.label(20, 30, "block_table=[3,2] · page_size=256 · seq_len=390", NAVY)
     d.text(20, 80, "逻辑序列", 22, NAVY, 600)
     d.rect(20, 104, 430, 60, AQUA, r=1)
     d.rect(450, 104, 225, 60, GOLD, r=1)
@@ -213,17 +213,17 @@ def paged_attention():
     d.text(20, 210, "物理存储", 22, NAVY, 600)
     for i in range(4):
         xx=20+i*220
-        d.rect(xx, 243, 200, 84, AQUA if i==3 else GOLD if i==1 else PALE, r=1)
+        d.rect(xx, 243, 200, 84, AQUA if i==3 else GOLD if i==2 else PALE, r=1)
         d.text(xx+100, 276, f"物理页 {i}", 21, NAVY, 600, "middle")
         d.text(xx+100, 309, f"{i*256}–{i*256+255}", 19, anchor="middle")
     d.path([(235,164),(235,186),(780,186),(780,243)], color=TEAL)
-    d.path([(562,164),(562,224),(340,224),(340,243)], color=AMBER)
+    d.path([(562,164),(562,243)], color=AMBER)
     d.rect(20, 375, 860, 155, "#f6f7f9", r=2)
     d.text(40, 408, "physical_slot = block_table[t // 256] × 256 + t % 256", 21, NAVY, 600)
     for xx, label in [(40, "t=0 → 768"), (300, "t=255 → 1023"),
-                      (600, "t=256 → 256")]:
+                      (600, "t=256 → 512")]:
         d.text(xx, 448, label, 21)
-    d.text(40, 486, "t=389 → 389；第二个逻辑页只有 134 个有效 token。", 21)
+    d.text(40, 486, "t=389 → 645；第二个逻辑页只有 134 个有效 token。", 21)
     d.note("逻辑页次序决定 Attention 的序列语义；物理页号不等于 token 的先后次序。")
     d.save("paged-attention.svg")
 

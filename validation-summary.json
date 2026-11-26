@@ -1,6 +1,84 @@
 {
   "document_version": "0.0.3",
   "applicable_document_version": "0.0.5",
+  "customer_review_update": {
+    "document_version": "0.0.6",
+    "date": "2026-11-25",
+    "counts": {
+      "compile_only": 8,
+      "cpu_reference_only": 15,
+      "host_layout_reference": 11,
+      "python_functional_simulator": 16
+    },
+    "execution_toolchain": {
+      "source_checkout_head": "ba776e8bfd381b3760f1f030a11854c772c08528",
+      "triton_checkout_head": "0fdbed5902308ddffc69097722beceb073d31a15",
+      "libtriton_sha256": "6d1ba2ccd4cf9e9478bd305e874f1411d111c1319abbdbe48f73c00ff3820044",
+      "binaries": {
+        "zecc": "fce7677fce29429cf6f75449bb700077f0e5fecbf2a1aa87a11b84dead23c021",
+        "zeus-compiler": "e2696c2ee487ab667e912bf03cd16a01a3530ae00b7928b7238f9ac94ea7d235",
+        "triton-shared-opt": "6c578f5fe700ef457f15afebe0ec8b77f50906fc2e1df3fc5075289e28b72412",
+        "zeusv3-backend": "d9f0803203cc9a62e2d376f92cf26d2bf748929ede5a372a86141603ac0d3dd5"
+      }
+    },
+    "simulator_checkout_head": "caf480853e60207f42ddccd2223fe4a56ea037f0",
+    "example_sha256": {
+      "examples/append_kcache.py": "b511adb898d00da41808dc2c64fd8e5fb5296e312856c78596ce807853ae6809",
+      "examples/append_vcache.py": "2769fd7682ad246706a2c5e6d528f904f4d369bdf6e19f2431b8c965f4c5ecd9",
+      "examples/check_environment.py": "6950804235e87cab556a50f0245afd6f74a92a0b7c433aebf37bc5b10f055732",
+      "examples/fused_add_rmsnorm.py": "61e348d60851ea703e0f3375c2615f8e45ae78d5d808b4d642df10608509267b",
+      "examples/graph_vector_add.py": "3aac1d359e142e58a89a1fe28928194aa278e7714e12ef13d8875231f8580320",
+      "examples/ldg_layout.py": "49a6d1e8b4e25cc81fd9e77f2d339ec9d9e2e57a88c8597c44d92bf3f6fd0ad0",
+      "examples/matmul.py": "dd537bddd8a8cb0e2c2fbb22a0248a7f47284d38cc70b240f44b280f5bee619b",
+      "examples/paged_attention_reference.py": "1ff74fafece52fd55c4d4a94cafd0f9b1ad1d558e4e55a1b5ddddda54c062e41",
+      "examples/quantized_matmul.py": "518e79643b19fe791aea63b329e33bb099d26937ffbe18d92c6f0c4fe1aab716",
+      "examples/rmsnorm.py": "ee65e59e3bede8bf58ea42f0daeb021668944e38878e14c2bdb2c683cf4b3fe2",
+      "examples/softmax.py": "6b021679443eed936c51732dfc5716ba618257f94a64b5ab6dd7dc856c409ee2",
+      "examples/vector_add.py": "f5883b174c178a04d67830044731cf8b2533f032d98e54563da343644ab21bc3"
+    },
+    "zbin_sha256": {
+      "append_kcache.zbin": "d2aa1595acaa89c8fe1c52c524092bd0544e4656e13aa35de3416d7e9e30ff49",
+      "append_vcache.zbin": "a65a6cb92f8c546aaf70cb7a0fc78971e3a78bba088fc6bf1118253e20328696",
+      "fused_add_rmsnorm.zbin": "4677605c2fd21cf6a4bd16addcc4a45773e00e9abd62881d4565b6a292edf841",
+      "matmul.zbin": "03624d132295255c33a82f69d2d30fcbf2b7b2765035ab2b8ab56fbb6957a9d1",
+      "quantized_matmul.zbin": "112cf70c4647995e24bdbb25376e71d48a81e02563082eb630d86209f47b7871",
+      "rmsnorm.zbin": "5adb5ab461551f632629fc2d40b8a1d06623465477efa4a6610233858fdba37f",
+      "softmax.zbin": "419136bd2338557d850c22970ed65c41e95557edf6bee4fb74bf4343fc9c365f",
+      "vector_add.zbin": "fb3e369591598fefafb7aaeefc87c089b8358c4cfbdd675194266362d415771a"
+    },
+    "functional_cases": [
+      "vector_add-2048-1.0",
+      "vector_add-2500-1.0",
+      "matmul-256-256-384",
+      "append_kcache-127",
+      "append_kcache-128",
+      "append_kcache-1000",
+      "append_kcache-1023",
+      "append_vcache-63",
+      "append_vcache-64",
+      "append_vcache-1000",
+      "append_vcache-1023",
+      "softmax-5-1024",
+      "softmax-5-1000",
+      "softmax-1-1",
+      "quantized_matmul-4-128-256",
+      "vector_add-1025-1.0"
+    ],
+    "additional_host_checks": [
+      "64 KiB slot bytes match INT4 packing and UScale transforms with zero slot padding",
+      "Reversed page mapping, adjacent and cross-page slot coordinates and K/V byte offsets",
+      "Partial and LSE Host references and rejection of mismatched LSE",
+      "Distinct inputs and Host outputs for the two Graph replays",
+      "Tail guard capacity and the exact vector device smoke-test CLI gate"
+    ],
+    "local_sdk_preflight": {
+      "registered": false,
+      "available": false,
+      "zecc_jit_imported": false,
+      "expected_nonzero_exit_verified": true
+    },
+    "limits": "Functional runs use precompiled zbin files. SDK JIT, AOT, Graph replay, physical device, CycleSim, VCS/RTL, performance and full-model runs require their own evidence."
+  },
   "host_layout_updates": {
     "document_version": "0.0.5",
     "date": "2026-11-25",

@@ -97,7 +97,8 @@
   #right-at(18.7mm, text(font: "FreeSans", size: 8.6pt, tracking: 1.25pt, fill: rgb("#8a4b33"))[PROGRAMMING GUIDE])
   #left-at(edge, 28.8mm, cover-rule)
 
-  #center-at(33.5mm, image("/assets/cover-art-v005.png", width: 193mm, height: 144.75mm, fit: "contain"))
+  #center-at(33.5mm, image("/assets/cover-art-v005.png", width: 193mm, height: 144.75mm, fit: "contain",
+    alt: "近存计算主题线刻示意，表现芯片封装与堆叠存储。"))
   #center-at(184mm, text(font: roman, size: 66.5pt, weight: "medium", style: "italic", tracking: -0.65pt, fill: rgb("#583d2d"), guide-name))
   #center-at(209mm, text(font: song, size: 39pt, weight: "bold", tracking: 2.25pt)[编程指南])
   #center-at(230mm, text(size: 11.2pt, fill: secondary)[$subtitle$])
@@ -160,7 +161,7 @@ $endfor$
     sticky: entry.element.func() == heading and entry.level < 3,
     link(entry.element.location(), entry.indented(number, body)))
 }
-#outline(title: none, depth: 3, indent: 1.6em)
+#outline(title: none, depth: 2, indent: 1.6em)
 #pagebreak()
 #heading(outlined: false, bookmarked: true, numbering: none)[插图目录]
 #v(3mm)

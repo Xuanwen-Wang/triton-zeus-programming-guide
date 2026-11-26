@@ -27,13 +27,21 @@ def append_kcache_token(
     address = tl.load(cache_page_ptr_list + core_id)
     payload = address.to(tl.pointer_type(tl.bfloat16))
     src = tl.make_block_ptr(
-        new_token_ptr, (1, HEAD_DIM), (HEAD_DIM, 1),
-        (0, 0), (1, HEAD_DIM), (1, 0),
+        base=new_token_ptr,
+        shape=(1, HEAD_DIM),
+        strides=(HEAD_DIM, 1),
+        offsets=(0, 0),
+        block_shape=(1, HEAD_DIM),
+        order=(1, 0),
     )
     token = tl.load(src)
     dst = tl.make_block_ptr(
-        payload, (PAGE_SIZE, HEAD_DIM), (HEAD_DIM, 1),
-        (token_offset, 0), (1, HEAD_DIM), (1, 0),
+        base=payload,
+        shape=(PAGE_SIZE, HEAD_DIM),
+        strides=(HEAD_DIM, 1),
+        offsets=(token_offset, 0),
+        block_shape=(1, HEAD_DIM),
+        order=(1, 0),
     )
     tl.store(
         dst, token, memory_type="kcache",

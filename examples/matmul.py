@@ -3,11 +3,12 @@
 """Single-core BF16 Matmul with an FP32 accumulator.
 
 The right operand is stored in LDG through a per-core address table.
-The default command computes a CPU reference. The guide's Matmul example
-shows how to prepare LocalMem and launch the kernel with the matching SDK.
+The default command computes a CPU reference. Use --run-device with the
+matching SDK to verify the worked 256 x 256 x 384 shape.
 """
 
 import argparse
+import json
 
 import torch
 import triton
@@ -28,16 +29,28 @@ def matmul_bf16(
     address = tl.load(w_ptr_list + core)
     wp = address.to(tl.pointer_type(tl.bfloat16))
     ap = tl.make_block_ptr(
-        a_ptr, (M, K), (K, 1), (0, 0),
-        (BLOCK_M, BLOCK_K), (1, 0),
+        base=a_ptr,
+        shape=(M, K),
+        strides=(K, 1),
+        offsets=(0, 0),
+        block_shape=(BLOCK_M, BLOCK_K),
+        order=(1, 0),
     )
     bp = tl.make_block_ptr(
-        wp, (N, K), (K, 1), (0, 0),
-        (BLOCK_N, BLOCK_K), (1, 0),
+        base=wp,
+        shape=(N, K),
+        strides=(K, 1),
+        offsets=(0, 0),
+        block_shape=(BLOCK_N, BLOCK_K),
+        order=(1, 0),
     )
     cp = tl.make_block_ptr(
-        c_ptr, (M, N), (N, 1), (0, 0),
-        (BLOCK_M, BLOCK_N), (1, 0),
+        base=c_ptr,
+        shape=(M, N),
+        strides=(N, 1),
+        offsets=(0, 0),
+        block_shape=(BLOCK_M, BLOCK_N),
+        order=(1, 0),
     )
     for mi in range(tl.cdiv(M, BLOCK_M)):
         for ni in range(tl.cdiv(N, BLOCK_N)):
@@ -74,18 +87,49 @@ def reference(a, weight_nk):
     return (a.float() @ weight_nk.float().T).to(torch.bfloat16)
 
 
+def run_zeus(a_host, w_host, device):
+    import torch_zeus  # noqa: F401
+
+    m, k = a_host.shape
+    n = w_host.shape[0]
+    if (m, n, k) != (256, 256, 384):
+        raise ValueError("the SDK example fixes M=256, N=256 and K=384")
+    with torch.zeus.device(device):
+        a = a_host.to(device)
+        out = torch.empty((m, n), dtype=torch.bfloat16, device=a.device)
+        packed = torch.zeus.local_memory.from_tensor(
+            w_host, kind="weight", Tr=1, Tc=1, core_id=0,
+        )
+        matmul_bf16[(1,)](
+            a, packed, out, m, k, n, **constants, zeus_enable_jit=True,
+        )
+        torch.zeus.synchronize(out.device)
+        return out.cpu()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--m", type=int, default=256)
     parser.add_argument("--n", type=int, default=256)
     parser.add_argument("--k", type=int, default=384)
+    parser.add_argument("--run-device", action="store_true")
+    parser.add_argument("--device", default="zeus:0")
     args = parser.parse_args()
     if min(args.m, args.n, args.k) <= 0:
         parser.error("M, N and K must be positive")
     generator = torch.Generator().manual_seed(20261124)
-    a = torch.randn(args.m, args.k, generator=generator)
-    w = torch.randn(args.n, args.k, generator=generator)
-    output = reference(a.to(torch.bfloat16), w.to(torch.bfloat16))
+    a = torch.randn(args.m, args.k, generator=generator).to(torch.bfloat16)
+    w = torch.randn(args.n, args.k, generator=generator).to(torch.bfloat16)
+    output = reference(a, w)
+    if args.run_device:
+        actual = run_zeus(a, w, args.device)
+        torch.testing.assert_close(actual, output, rtol=1e-2, atol=1e-2)
+        print(json.dumps({
+            "execution": "zeus_runtime",
+            "shape": list(actual.shape),
+            "max_abs": (actual.float() - output.float()).abs().max().item(),
+        }))
+        return
     print(f"CPU reference shape={tuple(output.shape)}")
     print(f"finite={bool(torch.isfinite(output).all())}")
     print("CPU reference only; the Zeus kernel was not executed")
